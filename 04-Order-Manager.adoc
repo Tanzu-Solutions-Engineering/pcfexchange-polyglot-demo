@@ -1,0 +1,1260 @@
+= Creating the Order Manager Application
+
+[Abstract]
+
+Create the Order Manager application to host the REST services for the client using Spring Boot. Deploy the application to Cloud Foundry.
+
+Demonstrate the use of manifests, scaling an application, fetching logs, inspecting Spring Boot Applications using actuator, and using Spring Cloud Registry.
+
+== Create a Spring Boot Starter Project
+
+. Open Spring Tool Suite (STS), and select `File`->`New`->`Spring Starter Project`.  Enter the following values:
+
++
+- Name: `order-manager`
+- Group: `io.pivotal.om`
+- Package: `io.pivotal.om`
+
+. On the _New Spring Starter Dependencies_ screen, search for and add the following dependencies to the project:
+
+- Web
+- Rest Repositories
+- JPA
+- Service Registry (PCF)
+- Config Client
+- H2
+- MySQL
+- Actuator
+- DevTools
+
++ Click _Finish_.  This will create a shell project for your code, with the key dependencies required.
+
+. Open the `pom.xml` file in STS, and make the following modifications:
+
+- In the `<parent>` element, change the `spring-boot-starter-parent` version to `1.5.6.RELEASE`.
+
++
+[source,xml]
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>1.5.6.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+
+. Add in the following dependency in the `<dependencyManagment>` section:
+
++
+[source,xml]
+----
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-config</artifactId>
+				<version>1.3.3.RELEASE</version>
+				<type>pom</type>
+				<scope>import</scope>
+			/dependency>
+----
++
+Save the file.  It should look like the file below.
+
++
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>io.pivotal</groupId>
+	<artifactId>order-manager</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>order-manager</name>
+	<description>Demo project for Spring Boot</description>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>1.5.7.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+		<spring-cloud-services.version>1.5.0.RELEASE</spring-cloud-services.version>
+		<spring-cloud.version>Dalston.SR4</spring-cloud.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-rest</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.pivotal.spring.cloud</groupId>
+			<artifactId>spring-cloud-services-starter-service-registry</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>io.pivotal.spring.cloud</groupId>
+				<artifactId>spring-cloud-services-dependencies</artifactId>
+				<version>${spring-cloud-services.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-config</artifactId>
+				<version>1.3.3.RELEASE</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+
+</project>
+----
+
+
+== Test the build environment
+
+. Open a command prompt window, and change to the `order-manager` directory.  Run your application using the following command:
+
++
+[source,bash]
+----
+mvn clean package -DskipTests spring-boot:run
+----
+
+. In the logged output from the application, look for the password to the application, and copy it to the clipboard.  It will look like (of course you'll have a different password):
+
++
+[source,bash]
+----
+Using default security password: 6717dcc5-ae63-4228-b1de-4b56674a4372
+----
+
+. Because we included the Spring Boot Actuator dependency, we get a number of endpoints out-of-the box that we can use to inspect our application.  This is great for monitoring and debugging.
+
++
+Spring Boot applications by default listen on port 8080, so open your browser and enter `http://localhost:8080/mappings`. Username is `user`, password you can paste from your clipboard.  You should see a list of all out-of-the-box actuator endpoints. REST endpoints we create for our application will also appear here - you can take a look at them later on.
+
+. Shut down the application by hitting <ctrl-c>.
+
+
+== Create the Domain Model
+
+This class will be our primary object we will persist and expose to the UI through REST services.
+
+. Create the `io.pivotal.om.domain` package, and the `ExecutionReport` class.
+
+. Open `ExecutionReport.java, and paste in the following code:
+
++
+[source,java]
+----
+package io.pivotal.om.domain;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.springframework.data.domain.Persistable;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Transient;
+
+@Entity
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ExecutionReport implements Persistable<String> {
+
+	public void setNew(boolean aNew) {
+		isNew = aNew;
+	}
+
+	@Transient
+	private boolean isNew;
+	private String execType;
+	private String execId;
+	private String tradeId;
+	private String execRefID;
+	private int totalNumReports;
+	private String clOrdID;
+	private String ordStatusReqID;
+	private String origClOrdID;
+	private String clientID;
+	private String massStatusReqID;
+	@Id
+	private String orderId;
+	private long secondaryOrderId;
+	private String symbol;
+	private int price;
+	private int stopPx;
+	private int orderQty;
+	private String ordType;
+	private String side;
+	private String timeInForce;
+	private String pegScope;
+	private String pegPriceType;
+	private long pegOffset;
+	private long seqNum;
+	private String triggerPriceType;
+	private int lastPx;
+	private int lastQty;
+	private int cumQty;
+	private int avgPx;
+	private int leavesQty;
+	private String transactTime;
+	private long fee;
+	private int lastCommission;
+	private int cummCommission;
+	private String trdMatchID;
+	private String ordStatus;
+	private long origEscrow;
+	private long leavesEscrow;
+	private int peggedPrice;
+	private String lastLiquidityInd;
+	private String submitTime;
+	private String ordRejReason;
+	private String cxlRejReason;
+	private boolean escrowRestricted;
+
+	public ExecutionReport() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
+	public ExecutionReport(String execType, String execId, String tradeId, String execRefID, int totalNumReports, String clOrdID, String ordStatusReqID, String origClOrdID, String clientID, String massStatusReqID, String orderId, long secondaryOrderId, String symbol, int price, int stopPx, int orderQty, String ordType, String side, String timeInForce, String pegScope, String pegPriceType, long pegOffset, long seqNum, String triggerPriceType, int lastPx, int lastQty, int cumQty, int avgPx, int leavesQty, String transactTime, long fee, int lastCommission, int cummCommission, String trdMatchID, String ordStatus, long origEscrow, long leavesEscrow, int peggedPrice, String lastLiquidityInd, String submitTime, String ordRejReason, String cxlRejReason, boolean escrowRestricted) {
+		this.execType = execType;
+		this.execId = execId;
+		this.tradeId = tradeId;
+		this.execRefID = execRefID;
+		this.totalNumReports = totalNumReports;
+		this.clOrdID = clOrdID;
+		this.ordStatusReqID = ordStatusReqID;
+		this.origClOrdID = origClOrdID;
+		this.clientID = clientID;
+		this.massStatusReqID = massStatusReqID;
+		this.orderId = orderId;
+		this.secondaryOrderId = secondaryOrderId;
+		this.symbol = symbol;
+		this.price = price;
+		this.stopPx = stopPx;
+		this.orderQty = orderQty;
+		this.ordType = ordType;
+		this.side = side;
+		this.timeInForce = timeInForce;
+		this.pegScope = pegScope;
+		this.pegPriceType = pegPriceType;
+		this.pegOffset = pegOffset;
+		this.seqNum = seqNum;
+		this.triggerPriceType = triggerPriceType;
+		this.lastPx = lastPx;
+		this.lastQty = lastQty;
+		this.cumQty = cumQty;
+		this.avgPx = avgPx;
+		this.leavesQty = leavesQty;
+		this.transactTime = transactTime;
+		this.fee = fee;
+		this.lastCommission = lastCommission;
+		this.cummCommission = cummCommission;
+		this.trdMatchID = trdMatchID;
+		this.ordStatus = ordStatus;
+		this.origEscrow = origEscrow;
+		this.leavesEscrow = leavesEscrow;
+		this.peggedPrice = peggedPrice;
+		this.lastLiquidityInd = lastLiquidityInd;
+		this.submitTime = submitTime;
+		this.ordRejReason = ordRejReason;
+		this.cxlRejReason = cxlRejReason;
+		this.escrowRestricted = escrowRestricted;
+	}
+
+	public String getExecType() {
+		return execType;
+	}
+	public void setExecType(String execType) {
+		this.execType = execType;
+	}
+	public String getExecId() {
+		return execId;
+	}
+	public void setExecId(String execId) {
+		this.execId = execId;
+	}
+	public String getTradeId() {
+		return tradeId;
+	}
+	public void setTradeId(String tradeId) {
+		this.tradeId = tradeId;
+	}
+	public String getExecRefID() {
+		return execRefID;
+	}
+	public void setExecRefID(String execRefID) {
+		this.execRefID = execRefID;
+	}
+	public int getTotalNumReports() {
+		return totalNumReports;
+	}
+	public void setTotalNumReports(int totalNumReports) {
+		this.totalNumReports = totalNumReports;
+	}
+	public String getClOrdID() {
+		return clOrdID;
+	}
+	public void setClOrdID(String clOrdID) {
+		this.clOrdID = clOrdID;
+	}
+	public String getOrdStatusReqID() {
+		return ordStatusReqID;
+	}
+	public void setOrdStatusReqID(String ordStatusReqID) {
+		this.ordStatusReqID = ordStatusReqID;
+	}
+	public String getOrigClOrdID() {
+		return origClOrdID;
+	}
+	public void setOrigClOrdID(String origClOrdID) {
+		this.origClOrdID = origClOrdID;
+	}
+	public String getClientID() {
+		return clientID;
+	}
+	public void setClientID(String clientID) {
+		this.clientID = clientID;
+	}
+	public String getMassStatusReqID() {
+		return massStatusReqID;
+	}
+	public void setMassStatusReqID(String massStatusReqID) {
+		this.massStatusReqID = massStatusReqID;
+	}
+	public String getOrderId() {
+		return orderId;
+	}
+	public void setOrderId(String orderId) {
+		this.orderId = orderId;
+	}
+	public long getSecondaryOrderId() {
+		return secondaryOrderId;
+	}
+	public void setSecondaryOrderId(long secondaryOrderId) {
+		this.secondaryOrderId = secondaryOrderId;
+	}
+	public String getSymbol() {
+		return symbol;
+	}
+	public void setSymbol(String symbol) {
+		this.symbol = symbol;
+	}
+	public int getPrice() {
+		return price;
+	}
+	public void setPrice(int price) {
+		this.price = price;
+	}
+	public int getStopPx() {
+		return stopPx;
+	}
+	public void setStopPx(int stopPx) {
+		this.stopPx = stopPx;
+	}
+	public int getOrderQty() {
+		return orderQty;
+	}
+	public void setOrderQty(int orderQty) {
+		this.orderQty = orderQty;
+	}
+	public String getOrdType() {
+		return ordType;
+	}
+	public void setOrdType(String ordType) {
+		this.ordType = ordType;
+	}
+	public String getSide() {
+		return side;
+	}
+	public void setSide(String side) {
+		this.side = side;
+	}
+	public String getTimeInForce() {
+		return timeInForce;
+	}
+	public void setTimeInForce(String timeInForce) {
+		this.timeInForce = timeInForce;
+	}
+	public String getPegScope() {
+		return pegScope;
+	}
+	public void setPegScope(String pegScope) {
+		this.pegScope = pegScope;
+	}
+	public String getPegPriceType() {
+		return pegPriceType;
+	}
+	public void setPegPriceType(String pegPriceType) {
+		this.pegPriceType = pegPriceType;
+	}
+	public long getPegOffset() {
+		return pegOffset;
+	}
+	public void setPegOffset(long pegOffset) {
+		this.pegOffset = pegOffset;
+	}
+	public long getSeqNum() {
+		return seqNum;
+	}
+	public void setSeqNum(long seqNum) {
+		this.seqNum = seqNum;
+	}
+	public String getTriggerPriceType() {
+		return triggerPriceType;
+	}
+	public void setTriggerPriceType(String triggerPriceType) {
+		this.triggerPriceType = triggerPriceType;
+	}
+	public int getLastPx() {
+		return lastPx;
+	}
+	public void setLastPx(int lastPx) {
+		this.lastPx = lastPx;
+	}
+	public int getLastQty() {
+		return lastQty;
+	}
+	public void setLastQty(int lastQty) {
+		this.lastQty = lastQty;
+	}
+	public int getCumQty() {
+		return cumQty;
+	}
+	public void setCumQty(int cumQty) {
+		this.cumQty = cumQty;
+	}
+	public int getAvgPx() {
+		return avgPx;
+	}
+	public void setAvgPx(int avgPx) {
+		this.avgPx = avgPx;
+	}
+	public int getLeavesQty() {
+		return leavesQty;
+	}
+	public void setLeavesQty(int leavesQty) {
+		this.leavesQty = leavesQty;
+	}
+	public String getTransactTime() {
+		return transactTime;
+	}
+	public void setTransactTime(String transactTime) {
+		this.transactTime = transactTime;
+	}
+	public long getFee() {
+		return fee;
+	}
+	public void setFee(long fee) {
+		this.fee = fee;
+	}
+	public int getLastCommission() {
+		return lastCommission;
+	}
+	public void setLastCommission(int lastCommission) {
+		this.lastCommission = lastCommission;
+	}
+	public int getCummCommission() {
+		return cummCommission;
+	}
+	public void setCummCommission(int cummCommission) {
+		this.cummCommission = cummCommission;
+	}
+	public String getTrdMatchID() {
+		return trdMatchID;
+	}
+	public void setTrdMatchID(String trdMatchID) {
+		this.trdMatchID = trdMatchID;
+	}
+	public String getOrdStatus() {
+		return ordStatus;
+	}
+	public void setOrdStatus(String ordStatus) {
+		this.ordStatus = ordStatus;
+	}
+	public long getOrigEscrow() {
+		return origEscrow;
+	}
+	public void setOrigEscrow(long origEscrow) {
+		this.origEscrow = origEscrow;
+	}
+	public long getLeavesEscrow() {
+		return leavesEscrow;
+	}
+	public void setLeavesEscrow(long leavesEscrow) {
+		this.leavesEscrow = leavesEscrow;
+	}
+	public int getPeggedPrice() {
+		return peggedPrice;
+	}
+	public void setPeggedPrice(int peggedPrice) {
+		this.peggedPrice = peggedPrice;
+	}
+	public String getLastLiquidityInd() {
+		return lastLiquidityInd;
+	}
+	public void setLastLiquidityInd(String lastLiquidityInd) {
+		this.lastLiquidityInd = lastLiquidityInd;
+	}
+	public String getSubmitTime() {
+		return submitTime;
+	}
+	public void setSubmitTime(String submitTime) {
+		this.submitTime = submitTime;
+	}
+	public String getOrdRejReason() {
+		return ordRejReason;
+	}
+	public void setOrdRejReason(String ordRejReason) {
+		this.ordRejReason = ordRejReason;
+	}
+	public String getCxlRejReason() {
+		return cxlRejReason;
+	}
+	public void setCxlRejReason(String cxlRejReason) {
+		this.cxlRejReason = cxlRejReason;
+	}
+	public boolean isEscrowRestricted() {
+		return escrowRestricted;
+	}
+	public void setEscrowRestricted(boolean escrowRestricted) {
+		this.escrowRestricted = escrowRestricted;
+	}
+
+	@Override
+	public String getId() {
+		return orderId;
+	}
+
+	@Override
+	public boolean isNew() {
+		return isNew;
+	}
+}
+----
+
++
+Note the `@Entity` annotation. JPA looks for that annotation, and when found will map the object to a table in the repository we will use for persistence.
+
++
+The `Id` annotation indicates the field JPA should use as the primary key for the table.
+
++
+The `@Transient` annotation indicates a field that will not be persisted in the repository.
+
+
+== Create the Repository
+
+This class will be used by Spring JPA as our object repository.
+
+. Create the `io.pivotal.om.repository` package, and the `OrderRepository` class.
+
+. Open the `OrderRepository.java` and paste in the following code:
+
++
+[source,java]
+----
+package io.pivotal.om.repository;
+import io.pivotal.om.domain.ExecutionReport;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface OrderRepository extends JpaRepository<ExecutionReport, String> {
+
+    @Query("SELECT new io.pivotal.om.domain.ExecutionReport(c.execType, c.execId, c.tradeId, c.execRefID, c. totalNumReports, c.clOrdID, c.ordStatusReqID, c.origClOrdID, c.clientID, c.massStatusReqID, c.orderId, c. secondaryOrderId, c.symbol, c. price, c. stopPx, c. orderQty, c.ordType, c.side, c.timeInForce, c.pegScope, c.pegPriceType, c. pegOffset, c. seqNum, c.triggerPriceType, c. lastPx, c. lastQty, c. cumQty, c. avgPx, c. leavesQty, c.transactTime, c. fee, c. lastCommission, c. cummCommission, c.trdMatchID, c.ordStatus, c. origEscrow, c. leavesEscrow, c. peggedPrice, c.lastLiquidityInd, c.submitTime, c.ordRejReason, c.cxlRejReason,  escrowRestricted) FROM ExecutionReport c WHERE c.clientID = :clientId")
+    public List<ExecutionReport> ordersByClient(@Param("clientId") String clientId);
+
+
+}
+----
+
++
+Take note of the definition of the interface, that it extends the `JpaRepository`, using `ExecutionReport` as the object type to be stored, and indicating that the primary key will be a `String`.
+
++
+We then define the specific query to be executed for our `ordersByClient` method.
+
+== Create the WebConfig class
+
+This class will be used to initialize the REST template and mappings to allow cross-domain services calls.
+
+. Create the `io.pivotal.om.config` package, and the `WebConfig` class.
+
+. Open `WebConfig.java` and paste in the following configuration code:
+
++
+[source,java]
+----
+package io.pivotal.om.config;
+
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+
+@Configuration
+
+public class WebConfig  {
+
+	@Bean
+	public RestTemplate restTemplate() {
+		return new RestTemplateBuilder().build();
+
+	}
+	@Bean
+	public WebMvcConfigurer corsConfigurer() {
+		return new WebMvcConfigurerAdapter() {
+			@Override
+			public void addCorsMappings(CorsRegistry registry) {
+				registry.addMapping("/**").allowedOrigins("*").allowedMethods("*");
+			}
+		};
+	}
+}
+----
+
+== Create the UI REST services
+
+This class will contain all the REST services that the UI client requires.  It will invoke a REST call on the exchange you created in the previous section, to execute the order.  For now, we will hard-code the list of available exchanges (in the `getExchanges()` method), as well as the endpoint of the exchange (in the `lookupUrlForExchange()` method).  Later we will use Spring Cloud Services Eureka service registry to do a dynamic lookup of these hardcoded values.
+
+. Create a new `io.pivotal.om.controller` package, and the UIServices class.
+
+. Open the UIServices class, and paste in the following code.
+
++
+NOTE: You *MUST* replace the URL defined in the `lookupUrlForExchange()` method with your own exchange *HTTP* (not *HTTPS*) URL that was assigned by Cloud Foundry when you deployed your exchange.  eg. `http://exchange-cadusd-antonomastical-fishhook.apps.pcf.space/`
+
++
+[source,java]
+----
+package io.pivotal.om.controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.*;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import io.pivotal.om.domain.ExecutionReport;
+import io.pivotal.om.repository.OrderRepository;
+@CrossOrigin(origins = "*", maxAge = 3600)
+@RestController
+@Configuration
+@EnableAutoConfiguration
+public class UIServices {
+
+	Logger logger = LoggerFactory.getLogger(UIServices.class);
+
+	private OrderRepository or;
+	private RestTemplate restTemplate;
+
+	@Value("${config.rate}")
+	int rate;
+
+
+	@Autowired
+	public UIServices(OrderRepository or, RestTemplate restTemplate) {
+		this.or = or;
+		this.restTemplate = restTemplate;
+	}
+
+	@DeleteMapping(value="api/client/{clientId}/order/{orderId}")
+	public ExecutionReport deleteOrder(@PathVariable String clientId, @PathVariable String orderId) {
+		ExecutionReport order = or.findOne(orderId);
+		String symbol = order.getSymbol();
+		String url = lookupUrlForExchange(symbol) + "/api/order/" + String.valueOf(orderId);
+		ResponseEntity<ExecutionReport> re = restTemplate.exchange(url, HttpMethod.DELETE, null, ExecutionReport.class);
+		ExecutionReport eor = re.getBody();
+		or.save(eor);
+		return eor;
+	}
+
+	@RequestMapping(value="api/client/{clientId}/orders", method=RequestMethod.GET)
+	public List<ExecutionReport> getOrders(@PathVariable String clientId) {
+		List<ExecutionReport> clientOrders = or.ordersByClient(clientId);
+		return clientOrders;
+	}
+
+
+	@RequestMapping(value="/api/exchanges", method=RequestMethod.GET)
+	public List<String> getExchanges() {
+
+		List<String> exchanges = new ArrayList<String>();
+		exchanges.add("EXCHANGE_CADUSD");
+		return exchanges;
+	}
+
+
+	@PostMapping(value="api/order")
+	@Transactional
+	@ResponseBody
+	public ExecutionReport placeOrder(@RequestBody ExecutionReport clientOrderRequest) {
+		String orderId = java.util.UUID.randomUUID().toString();
+		clientOrderRequest.setOrderId(orderId);
+		logger.debug("Created new order with ID=" + orderId);
+		String url = lookupUrlForExchange(clientOrderRequest.getSymbol()) + "/api/order/" + String.valueOf(orderId);
+		logger.debug("Exchange service URL=" + url);
+
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_JSON);
+		HttpEntity<ExecutionReport> httpOrderRequest = new HttpEntity<>(clientOrderRequest, headers);
+		ResponseEntity<ExecutionReport[]> re = restTemplate.exchange(url, HttpMethod.PUT, httpOrderRequest, ExecutionReport[].class);
+
+		ExecutionReport[] eor = re.getBody();
+		HashMap<String,ExecutionReport> ordersToSave = new HashMap<>();
+
+		for(ExecutionReport er : eor)
+		{
+			er.setLastCommission(rate);
+			ordersToSave.put(er.getOrderId(), er);
+		}
+		ExecutionReport newOrderLastState = ordersToSave.get(orderId);
+		newOrderLastState.setNew(true);
+		ordersToSave.forEach((l, order) -> or.save(order));
+		or.flush();
+
+		return newOrderLastState;
+	}
+
+	  private String lookupUrlForExchange(String symbol) {
+		  String url = <your-CADUSD-exchange-HTTP-URI>;
+		  return url;
+	  }
+
+}
+----
+
++
+Notice the annotations on each method, they will reflect the endpoints that will be exposed as REST services for the UI.
+
+== Update the Application Configuration
+
+. In the `src/main/resources` folder, rename the `application.properties` file to `application.yml`, and set the properties as below.
+
++
+[source,yaml]
+----
+spring:
+  application:
+    name: OrderManager
+  jpa:
+    generate-ddl: true
+    show-sql: true
+
+management:
+  security:
+    enabled: false
+
+security:
+  basic:
+    enabled: false
+
+logging:
+  level:
+    io:
+      pivotal:
+        om: DEBUG
+
+config:
+  rate: 1
+
+----
+
++
+Save the file.  We are configuring our application to:
+
+- generate the DDL for the entities we've defined
+- turn off default security (for simplification)
+- increase the logging level on all the classes we've written
+- define the default exchange rate (which is for demonstration purposes only - this would normally not be stored as a configuration parameter).
+
+
+== Build and run the project locally
+
+. In a command prompt window, change the the root project directory (eg. order-manager), and build the project artifacts by entering:
+
++
+[source,bash]
+mvn clean package spring-boot:run -DskipTests
+
+. Once the application starts up, in your browser (perhaps in a new tab this time?) once again enter `http://localhost:8080/mappings`.  Take note of the additional endpoint mappings we now have (eg. `/api/client/{clientId}/order/{orderId}`, `/api/client/{clientId}/orders`, etc.).
+
+. Launch Postman from the apps in your Chrome browser.  Select _POST_ from the dropdown set of methods.  Enter the following parameters:
+
++
+- URL:  `localhost:8080/api/order`
+- Body:  `Raw`
+- Beside the radio buttons for `raw` and `binary`, select `JSON (application/json)` from the dropdown
+- Paste in the following JSON payload (note if you run this multiple times, you must change the `clOrdId`):
+
++
+[source,json]
+----
+{
+"clientId": "cl-91",
+"clOrdId": "91",
+"symbol" : "CADUSD",
+"price": "10",
+"side": "Sell",
+"orderQty": "25",
+"ordType": "Market"
+}
+----
+
++
+Look for an HTTP response code of 200.  You should also receive a payload in the response, something similar to:
+
++
+[source,json]
+----
+{
+    "execType": "Canceled",
+    "execId": "0dc22a71-cd06-4ed1-b13f-234660fcf4ed",
+    "totalNumReports": 0,
+    "orderId": "40c1ede8-0774-4989-b148-fac5835216ce",
+    "secondaryOrderId": 0,
+    "symbol": "CADUSD",
+    "price": 10,
+    "stopPx": 0,
+    "orderQty": 25,
+    "ordType": "Market",
+    "side": "Sell",
+    "timeInForce": "GoodTillCancel",
+    "pegOffset": 0,
+    "seqNum": 6,
+    "lastPx": 0,
+    "lastQty": 0,
+    "cumQty": 0,
+    "avgPx": 0,
+    "leavesQty": 0,
+    "transactTime": "2017-10-10T04:56:16.1605342Z",
+    "fee": 0,
+    "lastCommission": 1,
+    "cummCommission": 0,
+    "ordStatus": "Canceled",
+    "origEscrow": 0,
+    "leavesEscrow": 0,
+    "peggedPrice": 0,
+    "lastLiquidityInd": "0",
+    "submitTime": "2017-10-10T04:56:16.1587545Z",
+    "escrowRestricted": false,
+    "id": "40c1ede8-0774-4989-b148-fac5835216ce",
+    "new": true
+}
+----
+
+. Stop the application by pressing `ctrl-c`.
+
+== Deploy the Order Manager application to PCF
+
+=== Create the PCF Services
+. From the command prompt, using the CF CLI, create a MySQL service instance in your space.  First, see what services are available for you to use.
+
++
+[source,bash]
+----
+cf marketplace
+----
+
++
+From the list of services, we can see we have a `p-mysql` database service available.  Create a service instance of it for the order manager:
+
++
+[source,bash]
+----
+cf create-service p-mysql 100mb omdb
+----
+
++
+Verify it has been created. Also verify the eureka service still exists (from the previous lab).
+
++
+[source,bash]
+----
+cf services
+----
+
+=== Create a PCF Manifest file
+
+. Verify that the `order-manager-0.0.1-SNAPSHOT.jar` was created in the `target` directory.
+
+. In the top level directory of the project, create a `manifest.yml` file with the following contents.
+
++
+NOTE: Replace <your initials> with your own initials.
+
++
+[source,yaml]
+----
+---
+applications:
+- name: om
+  host: om-<your-initials>
+  memory: 1G
+  instances: 1
+  path: target/order-manager-0.0.1-SNAPSHOT.jar
+  buildpack: java_buildpack_offline
+
+env:
+  TRUST_CERTS: api.sys.pcf.space
+
+services:
+ - omdb
+ - eureka
+----
+
++
+- The `host` property will be prepended to the default domain `apps.pcf.space` to create URL endpoint for the application.
+- The app will run in a conatiner with 1GB memory.
+- Only 1 instance of the app is required.
+- The `path` is provided to the application JAR file.
+- Instruct PCF to use the `java_buildpack_offline` to deploy the application.  (This is not required, however it does speed up the deployment process.)
+- Since we are using self-signed certificates, we must tell PCF to trust all services deployed to this installation.
+- Bind the application to the `omdb` MySQL service instance.  This is the repository.
+
+
+=== Deploy the application
+
+NOTE: From the command prompt, make sure you are in the root `order-manager` project directory, the same directory the `manifest.yml` file is.
+
+. Push the application to PCF by running the `cf push` command *from the `order-manager` directory*.
+
+. Verify the application started up correctly by checking the logs either from the Apps Manager web UI, or by entering
+
++
+[source,bash]
+----
+cf logs om --recent
+----
+
+. From Postman, test the deployed app by changing the URL to point to the order-manager URL that was assigned to your application.  eg. `om-<your-initials>.apps.pcf.space/api/order`.  Verify that you get an HTTP response code of 200 again with the JSON payload.
+
+=== Scale the application
+
+. Assume load has increased on the order manager application, and you need to scale the number of instances.  First, let's tail the logs in another terminal window (or tab):
+
++
+[source,bash]
+----
+cf logs om
+----
+
+. In the first terminal window (or tab), scale the number of instances to 2 using the CF CLI:
+
++
+[source,bash]
+----
+cf scale om -i 2
+----
+
+. Use Postman to hit the application a few times.  The requests are automatically load balanced across all the application instances.
+
+. Scale the application back to a single instance.
+
++
+[source,bash]
+----
+cf scale om -i 2
+----
+
+== Modify the application to use Spring Cloud Services Eureka Service Registry
+
+Now let's modify the code to remove those hard-coded values, and instead use the Service Registry to look up the available exchanges and their endpoints.
+
+. Add the `@EnableDiscoveryClient` annotation and corresponding  `org.springframework.cloud.client.discovery.EnableDiscoveryClient` import to the main `OrderManagerApplication.java` source code. The final code should be:
+
++
+[source,java]
+----
+package io.pivotal.om;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+
+@SpringBootApplication
+@EnableDiscoveryClient
+public class OrderManagerApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(OrderManagerApplication.class, args);
+	}
+
+}
+----
+
+. In the `UIServices.java`,
++
+- Add the DiscoveryClient private variable after the `restTemplate` declaration.
+
++
+[source,java]
+----
+	private DiscoveryClient discoveryClient;
+----
+
++
+- Update the constructor to inject the discovery client, and set the private variable.
+
++
+[source,java]
+----
+	@Autowired
+	public UIServices(OrderRepository or, RestTemplate restTemplate, DiscoveryClient discoveryClient) {
+		this.or = or;
+		this.restTemplate = restTemplate;
+		this.discoveryClient = discoveryClient;
+	}
+----
+
++
+- Change the `getExchanges()` method to retrieve all the exchanges from the service registry.
+
++
+[source,java]
+----
+	@RequestMapping(value="/api/exchanges", method=RequestMethod.GET)
+	public List<String> getExchanges() {
+
+		List<String> services = discoveryClient.getServices();
+		List<String> exchanges = new ArrayList<String>();
+		for (String service : services) {
+			if(service.toUpperCase().startsWith("EXCHANGE_"))
+				exchanges.add(service.substring("EXCHANGE_".length()).trim().toUpperCase());
+		}
+		return exchanges;
+	}
+----
+
++
+. Modify the `lookupUrlForExchange()` method to retrieve the URL for the exchange server from the registry.
+
++
+[source,java]
+----
+	  private String lookupUrlForExchange(String symbol) {
+		  List<ServiceInstance> serviceInstances = discoveryClient.getInstances("Exchange_" + symbol);
+		  String url = serviceInstances.get(0).getUri().toString();
+		  return url;
+	  }
+----
+
++
+. The final modified class should be:
+
++
+[source,java]
+----
+package io.pivotal.om.controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.*;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import io.pivotal.om.domain.ExecutionReport;
+import io.pivotal.om.repository.OrderRepository;
+@CrossOrigin(origins = "*", maxAge = 3600)
+@RestController
+@Configuration
+@EnableAutoConfiguration
+public class UIServices {
+
+	Logger logger = LoggerFactory.getLogger(UIServices.class);
+
+	private OrderRepository or;
+	private RestTemplate restTemplate;
+	private DiscoveryClient discoveryClient;
+
+	@Value("${config.rate}")
+	int rate;
+
+
+	@Autowired
+	public UIServices(OrderRepository or, RestTemplate restTemplate, DiscoveryClient discoveryClient) {
+		this.or = or;
+		this.restTemplate = restTemplate;
+		this.discoveryClient = discoveryClient;
+	}
+
+	@DeleteMapping(value="api/client/{clientId}/order/{orderId}")
+	public ExecutionReport deleteOrder(@PathVariable String clientId, @PathVariable String orderId) {
+		ExecutionReport order = or.findOne(orderId);
+		String symbol = order.getSymbol();
+		String url = lookupUrlForExchange(symbol) + "/api/order/" + String.valueOf(orderId);
+		ResponseEntity<ExecutionReport> re = restTemplate.exchange(url, HttpMethod.DELETE, null, ExecutionReport.class);
+		ExecutionReport eor = re.getBody();
+		or.save(eor);
+		or.flush();
+		return eor;
+	}
+
+	@RequestMapping(value="api/client/{clientId}/orders", method=RequestMethod.GET)
+	public List<ExecutionReport> getOrders(@PathVariable String clientId) {
+		List<ExecutionReport> clientOrders = or.ordersByClient(clientId);
+		return clientOrders;
+	}
+
+
+	@RequestMapping(value="/api/exchanges", method=RequestMethod.GET)
+	public List<String> getExchanges() {
+
+		List<String> services = discoveryClient.getServices();
+		List<String> exchanges = new ArrayList<String>();
+		for (String service : services) {
+			if(service.toUpperCase().startsWith("EXCHANGE_"))
+				exchanges.add(service.substring("EXCHANGE_".length()).trim().toUpperCase());
+		}
+		return exchanges;
+	}
+
+
+	@PostMapping(value="api/order")
+	@Transactional
+	@ResponseBody
+	public ExecutionReport placeOrder(@RequestBody ExecutionReport clientOrderRequest) {
+		String orderId = java.util.UUID.randomUUID().toString();
+		clientOrderRequest.setOrderId(orderId);
+		logger.debug("Created new order with ID=" + orderId);
+		String url = lookupUrlForExchange(clientOrderRequest.getSymbol()) + "/api/order/" + String.valueOf(orderId);
+		logger.debug("Exchange service URL=" + url);
+
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_JSON);
+		HttpEntity<ExecutionReport> httpOrderRequest = new HttpEntity<>(clientOrderRequest, headers);
+		ResponseEntity<ExecutionReport[]> re = restTemplate.exchange(url, HttpMethod.PUT, httpOrderRequest, ExecutionReport[].class);
+
+		ExecutionReport[] eor = re.getBody();
+		HashMap<String,ExecutionReport> ordersToSave = new HashMap<>();
+
+		for(ExecutionReport er : eor)
+		{
+			er.setLastCommission(rate);
+			ordersToSave.put(er.getOrderId(), er);
+		}
+		ExecutionReport newOrderLastState = ordersToSave.get(orderId);
+		newOrderLastState.setNew(true);
+		ordersToSave.forEach((l, order) -> or.save(order));
+		or.flush();
+
+		return newOrderLastState;
+	}
+
+	  private String lookupUrlForExchange(String symbol) {
+		  List<ServiceInstance> serviceInstances = discoveryClient.getInstances("Exchange_" + symbol);
+		  String url = serviceInstances.get(0).getUri().toString();
+		  return url;
+	  }
+
+}
+----
+
+. Build the updated application.
+
++
+[source,bash]
+----
+mvn clean package
+----
+
+. Push the application to PCF, *from the `order-manager` directory* containing the `manifest.yml` file.
+
+. Verify the application started successfully by viewing the log output.  Also send some requests using Postman and the Client UI.
+
+. From the Apps Manager, find the Eureka service instance, and click on the _Manage_ link to view all the services that are registered.

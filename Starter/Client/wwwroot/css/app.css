@@ -1,0 +1,23 @@
+.change_value_element, .change_percentage_element {
+	color: green;
+}
+
+.negative_value {
+	color: red;
+}
+
+.top-bar .name h1 a {
+	font-size: 2.0rem;
+}
+
+table, h3, .tab-container {
+	margin-left: 1.25rem;
+}
+
+.top-bar {
+	background: #00786E
+}
+
+button {
+	background: #00786E
+}

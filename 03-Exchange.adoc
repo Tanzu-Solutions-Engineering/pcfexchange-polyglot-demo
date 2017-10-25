@@ -1,0 +1,312 @@
+= Creating an Exchange
+
+[Abstract]
+This lab exercise will create a .NET exchange application to execute orders.
+
+== Modify Exchange for persistence
+
+==== Add necessary dependencies
+We'll be using Entity Framework Core with Migrations to store data in MySql. Pomelo.EntityFrameworkCore.MySql is used instead of Oracle driver as it has issues with .NET Core 2.0.
+
+. Add NuGet dependency to `Pomelo.EntityFrameworkCore.MySql`
+.. Right click on Dependencies in Exchange > Manage Nuget Packages
+.. On Browse tab, search for `Pomelo.EntityFrameworkCore.MySql`
+.. Click Install button to add it to the project
+. Add NuGet dependency to `Steeltoe.CloudFoundry.Connector.MySql`
+
+==== Map Cloud Foundry into config
+Modify `Program.cs` `BuildWebHost` method
+----
+using Steeltoe.Extensions.Configuration;
+...
+            WebHost.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration(config => config.AddCloudFoundry())
+                .UseStartup<Startup>()
+                .Build();
+----
+
+==== Create repository
+. Create new folder called `Repository`
+. Add class classed `ExchangeContext.cs`
+[source,c#]
+----
+using Almirex.Contracts.Messages;
+using Microsoft.EntityFrameworkCore;
+
+namespace Exchange.Repository
+{
+    public class ExchangeContext : DbContext
+    {
+        public ExchangeContext(DbContextOptions options) : base(options)
+        {
+        }
+
+        public DbSet<ExecutionReport> ExecutionReports { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ExecutionReport>().ToTable("ExecutionReport");
+            modelBuilder.Entity<ExecutionReport>().HasKey(x => x.ExecId);
+            modelBuilder.Entity<ExecutionReport>().HasIndex(x => new { x.OrdStatus });
+
+        }
+    }
+}
+----
+We're exposing Execution Report as a table in Entity Framework. The OnModelCreating is used to map database related concepts to our object class.
+
+==== Make Orderbook recover from database
+Edit `Exchange.Models.OrderbookService.cs`
+[source,c#]
+----
+using System;
+using System.Linq;
+using Almirex.Contracts.Fields;
+using Almirex.OrderMatchingEngine;
+using Almirex.OrderMatchingEngine.Utils;
+using Exchange.Repository;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using MoreLinq;
+
+namespace Exchange.Models
+{
+    public class OrderbookService
+    {
+        public OrderBook OrderBook { get; private set; }
+        public long SeqNum { get; set; }
+        public OrderbookService(IServiceProvider serviceProvider)
+        {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                OrderBook = new OrderBook("DEFAULT");
+                OrderBook.TradeIdGenerator = () => Guid.NewGuid().ToString();
+                var db = scope.ServiceProvider.GetRequiredService<ExchangeContext>();
+                Recover(db);
+            }
+
+        }
+        private void Recover(ExchangeContext db)
+        {
+            db.Database.Migrate(); // ensure database is created
+            this.SeqNum = 1;
+            if (db.ExecutionReports.Any())
+            {
+                var activeOrders = db.ExecutionReports.AsNoTracking()
+                    .GroupBy(x => x.OrderId)
+                    .Select(x => x.MaxBy(y => y.SeqNum))
+                    .Where(x => x.Symbol == this.OrderBook.Symbol && x.OrdStatus == OrdStatus.New || x.OrdStatus == OrdStatus.PartiallyFilled)
+                    .Select(x => x.ToOrder())
+                    .ToList();
+                try
+                {
+                    this.SeqNum = db.ExecutionReports.AsNoTracking()
+                                      .Where(x => x.Symbol == OrderBook.Symbol)
+                                      .Max(x => x.SeqNum) + 1;
+                }
+                catch (InvalidOperationException) //empty db
+                {
+                    this.SeqNum = 1;
+                }
+                OrderBook.Recover(activeOrders, 0);
+            }
+        }
+
+    }
+}
+----
+- We have to create scope explicitly because `OrderBookService` is a Singleton while dependencies are scoped to request. They have to be resolved from child scope
+- We call recover method on Orderbook that loads all execution reports for ACTIVE orders of current symbol
+- the call to `Migrate` method uses Entity Framework migrations to generate database schema and migrate it to the latest version. We'll add migrations innext step
+- We adjust SeqNum which is an incremental counter for every execution report spit out by exchange PER symbol. This allows consumers to detect when missed messages happened and eases recovery of the orderbook.
+
+==== Modify controller to save execution reports to database
+. Edit `OrderController.cs`
+. Inject reference to our repository:
++
+[source,c#]
+----
+using Exchange.Repository;
+...
+private readonly ExchangeContext _repository;
+
+public OrderController(OrderbookService orderbookService, ExchangeContext repository)
+{
+    _orderbookService = orderbookService;
+    _repository = repository;
+}
+...
+----
+. Add a method to save execution reports that Orderbook publishes:
++
+[source,c#]
+----
+private void ProcessExecutionReports(List<ExecutionReport> reports)
+{
+    reports.ForEach(x => x.SeqNum = _orderbookService.SeqNum++);
+    _repository.ExecutionReports.AddRange(reports);
+    _repository.SaveChanges();
+}
+----
+
+. Modify the actions that create and cancel orders to save the results to database:
++
+[source,c#]
+----
+       [HttpPut("{id}")]
+        public List<ExecutionReport> Put(string id, [FromBody]ExecutionReport order)
+        {
+            var results = _orderbookService.OrderBook.WithReports(ob => ob.NewOrder(order.ToOrder()));
+            ProcessExecutionReports(results);
+            return results;
+        }
+
+        // DELETE api/values/5
+        [HttpDelete("{id}")]
+        public IActionResult Delete(string id)
+        {
+            var order = _orderbookService.OrderBook.FindOrder(id);
+            if (order == null)
+                return NotFound();
+            var cancellationResult = _orderbookService.OrderBook.CancelOrder(order).ToExecutionReport();
+            ProcessExecutionReports(new List<ExecutionReport> { cancellationResult });
+            return Json(cancellationResult);
+        }
+----
+
+==== Register repository with Steeltoe Connector
+Edit `Startup.cs`
+[source,c#]
+----
+using Exchange.Repository;
+using Steeltoe.CloudFoundry.Connector.MySql.EFCore;
+...
+
+public void ConfigureServices(IServiceCollection services)
+{
+    services.AddDbContext<ExchangeContext>(opt => opt.UseMySql(Configuration));
+    ...
+}
+----
+==== Add config for local execution
+Edit appsettings.json
+----
+{
+    "mysql": {
+        "client": {
+          "sslmode": "none",
+          "server": "localhost",
+          "username": "root",
+          "database": "exchange"
+        }
+    },
+    ...
+}
+----
+
+==== Create database
+. Open up HeidiSQL from your Desktop
+. Connect to localhost (default profile)
+. Right click on Local > Create New > Database
+. Call it `exchange`
+
+==== Add database migrations
+Follow instructions as per MSDN on how to create initial Migration.
+
+Skip section on _Change the connection string_ as the connection string will be handled by Steeltoe MySql connector
+
+https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/migrations
+
+
+== Add Service Discovery
+We're going to make Orderbook register itself with Service Discovery service so other services can find it and route orders to it. The name of the orderbook app will determine the symbol it will be managing, and will take the syntax of `Exchange_SYMBOL`. The name will be automatically extracted from configuration provider by populated inside `SpringConfig` class.
+
+. Add NuGet reference to `Pivotal.Discovery.Client`
+. Edit Startup.cs:
+[source,c#]
+----
+using Pivotal.Discovery.Client;
+...
+public void ConfigureServices(IServiceCollection services)
+{
+    ...
+    services.Configure<Steeltoe.Discovery.Client.SpringConfig>(Configuration.GetSection("spring"));
+    services.AddDiscoveryClient(Configuration);
+    ...
+}
+...
+public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+{
+    ...
+    app.UseDiscoveryClient();
+    ...
+}
+----
+
+The name of the app will be determined by `spring:application:name` settings in appsettings.json when running locally, and overwritten by the actual name of the app when running in Cloud Foundry.
+
+Modify `appsettings.json` to add local name of the app, and the URL of the eureka server for testing:
+[source,json]
+----
+{
+  "spring": {
+    "application": {
+      "name": "Exchange_BTCUSD"
+    },
+  },
+  "eureka": {
+    "client": {
+      "serviceUrl": "http://localhost:8761/eureka/",
+      "shouldRegisterWithEureka": true,
+      "validate_certificates": false
+    },
+    "instance": {
+      "hostName": "localhost",
+      "port": 61186
+    }
+  },
+    ...
+}
+----
+- Notice the instance name sub-section in eureka section. This is how the app will declare it's address when it registers itself with service discovery server. This value will be automatically overridden when running on Cloud Foundry.
+
+==== Assign symbol name to OrderBook
+Right now our orderbook returns "DEFAULT" as symbol for all execution reports. Lets use the one assigned by the settings.
+
+. Edit Orderbook.cs
+. Modify OrderbookService constructor:
+[source,c#]
+----
+using Microsoft.Extensions.Options;
+using Steeltoe.Discovery.Client;
+...
+public OrderbookService(IServiceProvider serviceProvider)
+{
+    using (var scope = serviceProvider.CreateScope())
+    {
+        var config = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<SpringConfig>>();
+        var symbol = config.Value.Application.Name.Replace("Exchange_", string.Empty);
+        OrderBook = new OrderBook(symbol);
+        ...
+----
+
+==== Publish to Cloud Foundry
+. Create necessary services:
++
+----
+> cf create-service p-service-registry standard eureka
+> cf create-service p-mysql 100mb mysql
+----
+
+. Publish the code.
+.. Right click on Exchange in Solution Explorer > Publish.
+.. Click publish button
+. Open command prompt into `publish\Exchange` folder as per previous step
+. Push to Cloud Foundry
++
+----
+> cf push Exchange_CADUSD --random-route --no-start
+> cf bind-service Exchange_CADUSD mysql
+> cf bind-service Exchange_CADUSD eureka
+> cf start Exchange_CADUSD
+----
+We can push multiple instances of the app with different name as the suffix. Because each app will register with Service Discovery, we can dynamically determine which symbols are available for trading just by monitoring the state of the service!

@@ -1,0 +1,324 @@
+= Market Data Server
+
+[abstract]
+Create a market data server that listens to events that come out of Order Books and creates a data stream of "ticks". This will be published over websockets using SignalR for clients to consume. We're going to use Reactive Extensions in order to create a functional event pipeline stream which will read from RabbitMQ on one side, aggregate and transform the data, and publish it to SignalR using LINQ like syntax.
+
+== Modify Exchange to publish to RabbitMQ bus
+. Add NuGet dependencies to the following packages:
+.. `RabbitMQ.Client`
+.. `Steeltoe.CloudFoundry.Connector.Rabbit`
+. Register RabbitMQ in Startup.cs. Edit it as following:
++
+[source,c#]
+----
+using Steeltoe.CloudFoundry.Connector.Rabbit;
+...
+public void ConfigureServices(IServiceCollection services)
+{
+...
+    services.AddRabbitConnection(Configuration);
+...
+}
+----
+
+== Modify Controller to post execution reports on Rabbit exchange
+. Edit OrderController.cs
+.. Inject rabbit connection factory into constructor:
++
+[source,c#]
+----
+using RabbitMQ.Client;
+...
+private readonly ConnectionFactory _rabbitConnection;
+
+// GET api/values
+public OrderController(OrderbookService orderbookService, ConnectionFactory rabbitConnection, ExchangeContext repository)
+{
+    _orderbookService = orderbookService;
+    _rabbitConnection = rabbitConnection;
+    _repository = repository;
+}
+----
+.. Modify ProcessExecutionReports method to publish on the bus:
++
+[source,c#]
+----
+private void ProcessExecutionReports(List<ExecutionReport> reports)
+{
+    reports.ForEach(x => x.SeqNum = _orderbookService.SeqNum++);
+    _repository.ExecutionReports.AddRange(reports);
+    _repository.SaveChanges();
+    using (var connection = _rabbitConnection.CreateConnection())
+    using (var channel = connection.CreateModel())
+    {
+        channel.ExchangeDeclare(exchange: "execution-reports", type: "fanout", durable: false, autoDelete: false);
+        channel.BasicPublish(
+            exchange: "execution-reports",
+            routingKey: _orderbookService.OrderBook.Symbol,
+            basicProperties: null,
+            body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(reports)));
+    }
+}
+----
+. Create instance of rabbitmq service and bind it to exchange
+----
+> cf create-service p-rabbitmq standard rabbitmq
+> cf bind-service exchange_cadusd rabbitmq
+----
+. Publish and push the app as per steps from previous lab.
+
+
+== Create new web project
+. Create new ASP.NET Core 2.0 project called MarketDataServer in our solution
+.. Right click on solution > Add > New Project
+.. Select ASP.NET Core Web Application and give at a name of _MarketDataServer_
+. Select Web API as the project template
+
+== Add dependencies to libraries
+. Add NuGet dependencies to the following libraries:
+* `Microsoft.AspNetCore.SignalR` (make sure Include prerelease checkbox is selected for this one - we're using alpha version)
+* `RabbitMQ.Client`
+* `Steeltoe.CloudFoundry.Connector.Rabbit`
+* `Pivotal.Discovery.Client`
+* `System.Reactive`
+. Add Assembly dependency to dlls in Lib folder
+.. Right click on Dependencies -> Add Reference
+.. Browse to solution folder -> lib
+.. Select both dlls
+
+== Add Cloud Foundry to Configuration
+Edit `Program.cs` and modify method as following:
+[source,c#]
+----
+        public static IWebHost BuildWebHost(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration(cfg => cfg.AddCloudFoundry())
+                .UseStartup<Startup>()
+                .Build();
+----
+
+== Create a SignalR hub
+We're going to create a SignalR hub where clients will be able to connect to and listen to published events. Think of it like a programmatic "chat room". In this case we're not processing any events from the clients, so the hub will not have any methods
+
+. Create a folder called `Hubs`
+. Add a new class called `MarketDataHub`
++
+[source,c#]
+----
+using Microsoft.AspNetCore.SignalR;
+
+namespace MarketDataServer.Hubs
+{
+    public class MarketDataHub : Hub
+    {
+
+    }
+}
+----
+
+== Create Data Pusher
+This component will be responsible for reading data off the RabbitMQ bus, transforming the input, and publishing it to the hub
+
+. Create a class called Tick. This is our output data structure
++
+[source,c#]
+----
+public class Tick
+{
+    public long Price { get; set; }
+    public long LastPrice { get; set; }
+    public string Symbol { get; set; }
+    public long Volume { get; set; }
+}
+----
+. Create a class called DataPusher:
++
+[source,c#]
+----
+   public class DataPusher : IDisposable
+    {
+        private readonly ConnectionFactory _rabbitConnection;
+        private readonly IHubContext<MarketDataHub> _hubContext;
+        readonly CompositeDisposable _disposable = new CompositeDisposable();
+        private IConnection _connection;
+        private IModel _channel;
+        public DataPusher(IServiceProvider serviceProvider,IHubContext<MarketDataHub> hubContext)
+        {
+            var scope = serviceProvider.CreateScope();
+            _disposable.Add(scope);
+            _rabbitConnection = scope.ServiceProvider.GetService<ConnectionFactory>(); ;
+            _hubContext = hubContext;
+        }
+
+        public IDisposable StartPushing()
+        {
+
+            _connection = _rabbitConnection.CreateConnection();
+            _channel = _connection.CreateModel();
+            _channel.QueueDeclare("mds1", false, false, false, null);
+            _channel.ExchangeDeclare(exchange: "execution-reports", type: "fanout", durable: false, autoDelete: false);
+            _channel.QueueBind("mds1", "execution-reports", "#", null);
+            var consumer = new EventingBasicConsumer(_channel);
+            _channel.BasicConsume("mds1", true, consumer);
+
+
+            var observable = Observable.FromEventPattern<EventHandler<BasicDeliverEventArgs>, BasicDeliverEventArgs>(h => consumer.Received += h, h => consumer.Received -= h);
+            var handle = observable
+                .Select(x => JsonConvert.DeserializeObject<List<ExecutionReport>>(Encoding.UTF8.GetString(x.EventArgs.Body)))
+                .SelectMany(x => x)
+                .Where(x => x.ExecType == ExecType.Trade)
+                .GroupByUntil(x => x.TradeId, x => x.Buffer(2))
+                .SelectMany(x => x.FirstAsync())
+                .Scan(new Tick(), (tick, report) => new Tick
+                {
+                    Price = report.LastPx,
+                    LastPrice= tick.Price,
+                    Symbol = report.Symbol,
+                    Volume = report.LastQty
+                })
+                .Do(tick => _hubContext.Clients.All.InvokeAsync("tick", tick))
+                .Subscribe();
+            _disposable.Add(handle);
+            return handle;
+
+
+        }
+        public void Dispose()
+        {
+            _disposable.Dispose();
+
+        }
+    }
+----
+
+== Setup registrations for app startup
+Modify Startup.cs
+
+. Modify serialization settings. We want JSON to serialize enums as strings rather then numbers for easy processing, and use camel case as that's what browser JSON serializer defaults to
+[source,c#]
++
+----
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
+
+...
+private JsonSerializerSettings ConfigureSerializer(JsonSerializerSettings serializer)
+{
+    serializer.Formatting = Formatting.Indented;
+    serializer.ContractResolver = new CamelCasePropertyNamesContractResolver();
+    serializer.Converters = new List<JsonConverter> { new StringEnumConverter() };
+    return serializer;
+
+}
+----
+
+. Register dependencies into service container:
++
+[source,c#]
+----
+using Pivotal.Discovery.Client;
+using Steeltoe.CloudFoundry.Connector.Rabbit;
+...
+public void ConfigureServices(IServiceCollection services)
+{
+    services.AddMvc().AddJsonOptions(options => ConfigureSerializer(options.SerializerSettings));
+    services.AddRabbitConnection(Configuration);
+    services.AddSignalR(x => ConfigureSerializer(x.JsonSerializerSettings));
+    services.AddDiscoveryClient(Configuration);
+    services.AddSingleton<DataPusher>();
+    JsonConvert.DefaultSettings = () => ConfigureSerializer(new JsonSerializerSettings());
+}
+----
+
+. Activate the components and setup routing for SignalR:
++
+[source,c#]
+----
+using MarketDataServer.Hubs;
+...
+public void Configure(IApplicationBuilder app, IHostingEnvironment env, DataPusher pusher)
+{
+    if (env.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage();
+    }
+    app.UseCors(builder => {
+        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+    app.UseWebSockets();
+    app.UseDiscoveryClient();
+    app.UseSignalR(routes =>
+    {
+        routes.MapHub<MarketDataHub>("trade");
+    });
+    app.UseMvc();
+    pusher.StartPushing();
+
+}
+----
+* We setup Cors to allow calling the app from other applications. We're going to leave it wide open for this exercise, but you would want to use the most narrow domain scope for production purproses.
+* We setup our MarketDataHub to listen on `/trade` endpoint
+* We activate our Data Pusher
+
+== Modify appsettings.json for local testing
+[source,json]
+----
+{
+  "spring": {
+    "application": {
+      "name": "MDS"
+    }
+  },
+  "eureka": {
+    "client": {
+      "serviceUrl": "http://localhost:8761/eureka/",
+      "validate_certificates": false
+    }
+  }
+  ...
+}
+----
+
+== Create manifest.yaml for pushing the app
+. Create a new file in the root of the project called manifest.yaml
++
+[source,yaml]
+----
+---
+applications:
+- name: mds
+  random-route: true
+  memory: 1G
+  stack: cflinuxfs2
+  health-check-type: port
+  buildpack: dotnet_core_buildpack
+  services:
+    - eureka
+    - rabbitmq
+----
+
+. Select the file in Solution Explorer, and in Properties window change _Copy to output directory_ to `Copy always`
+
+== Publish to Pivotal Cloud Foundry
+
+
+. Disable MVC Razer view compilation (currently not supported in .NET Core 2.0). Right click on MarketDataServer -> Edit MarketDataServer.csproj. Modify the header as following:
++
+[source,xml]
+----
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
+  </PropertyGroup>
+  ...
+----
+
+. Right click MarketDataServer in solution explorer -> Publish
+. Select folder as profile. For folder use `..\publish\MarketDataServer`
+. Click publish
+. Drop into command line and switch into the `..\publish\MarketDataServer` folder
+. Publish the app via `cf push`
+* Notice we didn't give the app the name. In this case it will use the settings found in the manifest to automatically give the app the name, the route, the scaling options, and bind it to the required services

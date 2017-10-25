@@ -1,0 +1,26 @@
+= Deploying the Client to PCF
+
+[Abstract]
+Deploy the client-facing UI to Pivotal Cloud Foundry.
+
+== Deploying the Client GUI
+. Publish the code.
+.. Right click on Client in Solution Explorer > Publish.
+.. Click publish button
+. Open command prompt into `publish\Client` folder as per previous step
+. Push to Cloud Foundry. Replace # with your student number
+
++
+[source,bash]
+----
+cf push client --hostname client#
+----
+
+. Get information about the application you just deployed.
+
++
+----
+cf app client
+----
+
+. Visit the address as specified by the URL to ensure app properly started up

@@ -1,0 +1,15 @@
+---
+applications:
+- name: om
+  host: om-dlb
+  memory: 1G
+  instances: 1
+  path: target/order-manager-0.0.1-SNAPSHOT.jar
+  buildpack: java_buildpack_offline
+  
+env:
+  TRUST_CERTS: api.sys.pcf.space
+  
+services:
+ - omdb 
+ - eureka

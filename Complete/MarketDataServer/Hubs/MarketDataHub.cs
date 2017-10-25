@@ -1,0 +1,1 @@
+﻿using Microsoft.AspNetCore.SignalR;namespace MarketDataServer.Hubs{    public class MarketDataHub : Hub    {    }}

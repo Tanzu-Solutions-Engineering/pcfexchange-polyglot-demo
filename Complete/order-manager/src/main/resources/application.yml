@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: OrderManager
+  jpa:
+    generate-ddl: true
+    show-sql: true
+    
+management:
+  security:
+    enabled: false
+        
+security:
+  basic:
+    enabled: false
+
+logging:
+  level:
+    io:
+      pivotal:
+        om: DEBUG
+config:
+  rate: 1

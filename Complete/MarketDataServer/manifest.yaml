@@ -1,0 +1,11 @@
+﻿---
+applications:
+- name: mds
+  random-route: true
+  memory: 1G
+  stack: cflinuxfs2
+  health-check-type: port
+  buildpack: dotnet_core_buildpack
+  services:
+    - eureka 
+    - rabbitmq 

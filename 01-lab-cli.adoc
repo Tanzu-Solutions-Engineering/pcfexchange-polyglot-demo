@@ -1,0 +1,41 @@
+= Introduction to Pivotal Cloud Foundry (PCF)
+
+[Abstract]
+Log into Pivotal Cloud Foundry from the web interface (Apps Manager), and the CF CLI.
+
+== Verify the Cloud Foundry CLI has been installed
+
+. Check to see if you have a CLI already installed (you should). Open a terminal/command window and type `cf --version`. If you see that you have an installed version of 6.x or greater, you can skip the install and go to the next section.
+
+. Go to https://github.com/cloudfoundry/cli/releases or https://console.run.pivotal.io/tools. Download and run the installer for your platform.
+
+. Verify your install by opening a terminal/command window and typing `cf --version`. You now have a Cloud Foundry client that can communicate with any Cloud Foundry installation.
+
+
+== Explore cf help
+
+. Type `cf help -a`. Scroll through the list of commands available to the CLI.
+
+== Log into Pivotal Cloud Foundry From a Browser
+
+. Open Google Chrome and navigate to https://apps.sys.pcf.space/. This is the Cloud Foundry installation we will use for the workshop.
+
++
+NOTE: If you want to continue to work with Pivotal Cloud Foundry after the workshop, you can create a free trial account at https://run.pivotal.io.
+
+. Each student will be assigned a username of `s1`-`s4`.  Enter your assigned username, and a password of `Pivotal2017`.  You should then be showing the home page of the _Pivotal Apps Manager_.
+
+. Click on the Tools tab (on the bottom left side) to see the connection information for the CLI. You will use this information to login to the CLI (in fact, you can copy and paste from this window).
+
+== Login with the CLI
+
+NOTE: Because we are using a self-signed certificate, you will have to append `--skip-ssl-validation` to the `cf login` command shown in order to log in to your PCF account.
+
+. Login in to your account using the CF CLI:
+
++
+```
+cf login -a api.sys.pcf.space --skip-ssl-validation
+```
+
+. Once you have logged in, type `cf target` to view your current API endpoint, User, Org and Space.  Each student account has their own corresponding space.
