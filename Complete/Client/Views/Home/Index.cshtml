@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/foundation.css" />
     <link rel="stylesheet" href="css/app.css" />
     <script src="js/vendor/modernizr.js"></script>
+
 </head>
 <body>
     <script>
@@ -67,6 +68,7 @@
                 })
 
                 self.NewOrder = () => {
+                     
                     self.order.clOrdID(guid());
                     //self.order.orderId(guid());
                     $.ajax({
@@ -75,6 +77,11 @@
                         url: OMS_URL + "api/order",
                         contentType: "application/json"
                     }).then(result => {
+                        if (result.execType === "Rejected") {
+                            var x = document.getElementById("reject");
+                            x.className = "show";
+                            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+                        }
                         self.GetOrders();
                     });
                 }
@@ -346,32 +353,34 @@
         </div>
     </div>
     <h3>Ticker</h3>
-    <table width="50%">
-        <thead>
-            <tr>
-                <th>Symbol</th>
-                <th>Price</th>
-                <th>Change</th>
-                <th>Change (%)</th>
-                <th>Volume</th>
-            </tr>
-        </thead>
-        <tbody data-bind="foreach: ticks">
-            <tr>
-                <td data-bind="text: symbol"></td>
-                <td data-bind="text: price"></td>
-                <td class="change_value_element" data-bind="text: change"></td>
-                <td class="change_percentage_element" data-bind="text: changePercentage"></td>
-                <td data-bind="text: volume"></td>
-            </tr>
-        </tbody>
-    </table>
+<table width="50%">
+    <thead>
+    <tr>
+        <th>Symbol</th>
+        <th>Price</th>
+        <th>Change</th>
+        <th>Change (%)</th>
+        <th>Volume</th>
+    </tr>
+    </thead>
+    <tbody data-bind="foreach: ticks">
+    <tr>
+        <td data-bind="text: symbol"></td>
+        <td data-bind="text: price"></td>
+        <td class="change_value_element" data-bind="text: change"></td>
+        <td class="change_percentage_element" data-bind="text: changePercentage"></td>
+        <td data-bind="text: volume"></td>
+    </tr>
+    </tbody>
+</table>
+<div id="reject">Order was rejected</div>
     <script src="js/vendor/jquery.js">
     </script>
     <script src="js/foundation.min.js">
     </script>
     <script>
-         $(document).foundation();
+        $(document).foundation();
+        
     </script>
 </body>
 </html>

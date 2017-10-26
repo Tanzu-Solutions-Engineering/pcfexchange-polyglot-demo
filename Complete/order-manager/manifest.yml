@@ -11,5 +11,5 @@ env:
   TRUST_CERTS: api.sys.pcf.space
   
 services:
- - omdb 
+ - omsdb 
  - eureka
