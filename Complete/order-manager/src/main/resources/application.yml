@@ -4,8 +4,9 @@ spring:
   jpa:
     generate-ddl: true
     show-sql: true
-    
 management:
+  cloudfoundry:
+    skip-ssl-validation: true
   security:
     enabled: false
         
