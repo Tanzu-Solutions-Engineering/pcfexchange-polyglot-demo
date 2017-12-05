@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Exchange.Models;
 using Exchange.Repository;
 using Microsoft.AspNetCore.Builder;
@@ -8,8 +9,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Pivotal.Discovery.Client;
+using Steeltoe.CircuitBreaker.Hystrix;
 using Steeltoe.CloudFoundry.Connector.MySql.EFCore;
 using Steeltoe.CloudFoundry.Connector.Rabbit;
+using Steeltoe.Management.CloudFoundry;
 
 namespace Exchange
 {
@@ -27,13 +30,14 @@ namespace Exchange
         {
 
             services.AddOptions();
-            services.AddDbContext<ExchangeContext>(opt => opt.UseMySql(Configuration));
+            services.AddDbContext<ExchangeContext>(opt => opt.UseMySql(Configuration), ServiceLifetime.Singleton);
             services.AddMvc().AddJsonOptions(options => ConfigureSerializer(options.SerializerSettings));
             services.AddCors();
             services.AddSingleton<OrderbookService>();
             services.Configure<Steeltoe.Discovery.Client.SpringConfig>(Configuration.GetSection("spring"));
-            services.AddRabbitConnection(Configuration);
+            services.AddRabbitConnection(Configuration, ServiceLifetime.Singleton);
             services.AddDiscoveryClient(Configuration);
+            services.AddCloudFoundryActuators(Configuration);
             JsonConvert.DefaultSettings = () => ConfigureSerializer(new JsonSerializerSettings());
         }
 
@@ -51,6 +55,9 @@ namespace Exchange
             });
             app.UseMvc();
             app.UseDiscoveryClient();
+            app.UseCloudFoundryActuators();
+            app.UseOrderbookService();
+
         }
 
 
@@ -64,6 +71,15 @@ namespace Exchange
             serializer.Converters = new List<JsonConverter> {new StringEnumConverter()};
             return serializer;
 
+        }
+    }
+
+    public static class OrderbookServiceRegistration
+    {
+        public static void UseOrderbookService(this IApplicationBuilder app)
+        {
+            var orderbookService = app.ApplicationServices.GetService<OrderbookService>();
+            orderbookService.Recover();
         }
     }
 }

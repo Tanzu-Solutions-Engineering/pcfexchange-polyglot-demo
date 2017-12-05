@@ -20,15 +20,11 @@ namespace Exchange.Controllers
     {
         private readonly OrderbookService _orderbookService;
 
-        private readonly ExchangeContext _repository;
-        private readonly ConnectionFactory _rabbitConnection;
 
         // GET api/values
         public OrderController(OrderbookService orderbookService, ConnectionFactory rabbitConnection, ExchangeContext repository)
         {
             _orderbookService = orderbookService;
-            _rabbitConnection = rabbitConnection;
-            _repository = repository;
         }
 
         [HttpGet]
@@ -52,8 +48,7 @@ namespace Exchange.Controllers
         [HttpPut("{id}")]
         public List<ExecutionReport> Put(string id, [FromBody]ExecutionReport order)
         {
-            var results = _orderbookService.OrderBook.WithReports(ob => ob.NewOrder(order.ToOrder()));
-            ProcessExecutionReports(results);
+            var results = _orderbookService.NewOrder(order);
             return results;
         }
 
@@ -61,31 +56,10 @@ namespace Exchange.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(string id)
         {
-            var order = _orderbookService.OrderBook.FindOrder(id);
-            if (order == null)
-                return NotFound();
-            var cancellationResult = _orderbookService.OrderBook.CancelOrder(order).ToExecutionReport();
-            ProcessExecutionReports(new List<ExecutionReport> { cancellationResult });
-            return Json(cancellationResult);
+            var executionReport = _orderbookService.CancelOrder(id).FirstOrDefault();
+            return Json(executionReport);
         }
 
 
-        private void ProcessExecutionReports(List<ExecutionReport> reports)
-        {
-            reports.ForEach(x => x.SeqNum = _orderbookService.SeqNum++);
-            _repository.ExecutionReports.AddRange(reports);
-            _repository.SaveChanges();
-            using (var connection = _rabbitConnection.CreateConnection())
-            using (var channel = connection.CreateModel())
-            {
-                channel.ExchangeDeclare(exchange: "execution-reports", type: "fanout", durable: false, autoDelete: false);
-        
-                channel.BasicPublish(
-                    exchange: "execution-reports",
-                    routingKey: _orderbookService.OrderBook.Symbol,
-                    basicProperties: null,
-                    body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(reports)));
-            }
-        }
     }
 }

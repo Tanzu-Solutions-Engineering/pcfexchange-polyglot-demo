@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Pivotal.Discovery.Client;
+using Steeltoe.Management.CloudFoundry;
 
 namespace Client
 {
@@ -19,6 +20,7 @@ namespace Client
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.AddCloudFoundryActuators(Configuration);
             services.AddDiscoveryClient(Configuration);
         }
 
@@ -36,7 +38,7 @@ namespace Client
             }
 
             app.UseStaticFiles();
-
+            app.UseCloudFoundryActuators();
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
@@ -44,6 +46,7 @@ namespace Client
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
             app.UseDiscoveryClient();
+            
         }
     }
 }

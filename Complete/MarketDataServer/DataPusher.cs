@@ -35,7 +35,7 @@ namespace MarketDataServer
             _connection = _rabbitConnection.CreateConnection();
             _channel = _connection.CreateModel();
             var mdsQueue = _channel.QueueDeclare().QueueName;
-            _channel.ExchangeDeclare(exchange: "execution-reports", type: "fanout", durable: false, autoDelete: false);
+            _channel.ExchangeDeclare(exchange: "execution-reports", type: "fanout", durable: true, autoDelete: false);
             _channel.QueueBind(mdsQueue, "execution-reports", "#", null);
             var consumer = new EventingBasicConsumer(_channel);
             _channel.BasicConsume(mdsQueue, true, consumer);

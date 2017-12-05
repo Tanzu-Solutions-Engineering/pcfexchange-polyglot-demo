@@ -14,6 +14,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Steeltoe.CloudFoundry.Connector.Rabbit;
 using Pivotal.Discovery.Client;
+using Steeltoe.Management.CloudFoundry;
 
 namespace MarketDataServer
 {
@@ -34,6 +35,7 @@ namespace MarketDataServer
             services.AddSignalR(x => ConfigureSerializer(x.JsonSerializerSettings));
             services.AddDiscoveryClient(Configuration);
             services.AddSingleton<DataPusher>();
+            services.AddCloudFoundryActuators(Configuration);
             JsonConvert.DefaultSettings = () => ConfigureSerializer(new JsonSerializerSettings());
         }
 
@@ -51,8 +53,10 @@ namespace MarketDataServer
             app.UseDiscoveryClient();
             app.UseSignalR(routes =>
             {
+                
                 routes.MapHub<MarketDataHub>("trade");
             });
+            app.UseCloudFoundryActuators();
             app.UseMvc();
             pusher.StartPushing();
 
