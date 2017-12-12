@@ -1,0 +1,199 @@
+= Part 1 - PCF Basics
+== Required packages
+. CF CLI
+
+== Logging in
+=====
+. Visit `https://login.sys.pcf.space`
+. After logging in, click Tools to get API endpoint
+. Use CLI to login into PCF
++
+----
+> cf login -a api.sys.pcf.space --skip-ssl-validation
+----
+=====
+
+== Pushing Articulate app
+=====
+. Open command prompt and switch into the folder with JAR file in CLI.
+.. _Pro Tip_: Browse to the folder using Windows Explorer, then type `cmd` in address bar to open command prompt targeting the folder
+. Push the app by specifying application name and the path to package to push. Replace the # with your student #.
++
+----
+> cf push Articulate# -p articulate.jar
+----
+. After app is done uploading, locate the URL in the CLI output. Browse to it via browser
+=====
+
+== Scaling application
+====
+. Increate the scale of application to run 2 containers 
++
+----
+> cf scale Articulate# -i 2
+----
+. Observe the status of the application
+----
+> cf app Articulate#
+----
+====
+
+== Logging
+====
+. Check recent logs of application 
++
+----
+> cf logs Articulate# --recent
+----
+. Tail the logs (attach to live stream)
++
+----
+> cf logs Articulate#
+----
+====
+
+== Health Monitoring
+====
+. Access Articulate in Apps Manager
+. Open another tab & visit app URL & click HA & Scaling tab
+. Tail the logs (attach to live stream)
++
+----
+> cf logs Articulate#
+----
+. Click the kill button in the app
+
+====
+
+== Marketplace
+====
+. View list of services available in marketplace
++
+----
+> cf marketplace
+----
+====
+
+== Create instance of MySQL
+====
+. Issue create service command
++
+----
+> cf create-service p-mysql 100mb mydatabase
+----
+. The command has 3 parameters:
+.. Name of service as it appears in the marketplace
+.. Name of plan for that service (there could be multiple to choose from)
+.. Logical name for service within current space.
+====
+
+== Bind the service to the app
+====
+. To deliver database connection string to application we need to bind it to the service:
++
+----
+> cf bind-service Articulate# mydatabase 
+----
+. Command takes two parameters:
+.. Name of app
+.. Name of service
+. Restart the app to have it re-read the environmental variables and pick up connection string
+. Access the app to see the binding being picked up by Spring
+====
+
+
+= Part 2 - PCF Exchange
+== Prepare local environment
+====
+. Download the required artifacts from https://github.com/Pivotal-Field-Engineering/pcfechange-polyglot-demo/releases
+. Extract the content to a folder on your drive
+. Open command prompt to the \Artifacts folder inside the zip
+====
+
+== Pushing Client
+====
+. Put terminal into Artifacts\Client folder
+. Push the app
++
+----
+> cf push Client --random-route
+----
+.. Notice the `random-route` argument. By default applications get hostname with same name as the app, but since everyone is pushing the same app we would get collisions. We can give explicit hostname via `-n HOSTNAME` argument
+. After push is finished, examine the logs:
++
+----
+> cf logs client --recent
+----
+.. Notice the errors. This is because client has dependency on service discovery which we did not create
+. Create service discovery instance (aka eureka) through the GUI
+.. Marketplace > Service Registry > Select this plan
+.. Instance name: eureka. 
+.. Click add
+. Wait for instance to complete creating
+. Bind the service to the app
+. Restart the app 
+. Confirm that app can talk to eureka by checking the logs again (no errors should be coming out this time)
+====
+
+== Pushing OMS with manifest
+=====
+. Create required services from command line
++
+----
+> cf create-service p-circuit-breaker-dashboard standard hystrix
+> cf create-service p-config-server standard configserver -c gitconfig.json
+> cf create-service p-mysql 100mb omsdb
+----
+. Wait for hystrix and config server to finish creating (they take time). Check on status:
++
+----
+> cf services
+----
+. Switch command line into Artifacts\OMS folder
+. Adjust the `manifest.yml` file to change `host` to something unique and set the variable that defines `TRUST_CERTS` points to your API endpoint. This will make app trust SSL certificates on that Cloud Foundry instance even if they are not signed by trusted CA
+. Issue push with no arguments
++
+----
+> cf push
+----
+=====
+
+== Push Exchange & MDS together
+====
+. Create remaining services (these are created instantly):
++
+----
+> cf create-service p-mysql 100mb exchange
+> cf create-service p-rabbitmq standard rabbitmq
+----
+. Edit manifest.yml in \Artifacts folder to contain push instructions only for Exchange & MDS. By end it should look like this:
++
+----
+---
+applications:
+- name: Exchange_BTCUSD
+  path: Exchange\
+  random-route: true
+  memory: 1G
+  health-check-type: port
+  buildpack: dotnet_core_buildpack
+  services:
+    - exchange
+    - eureka
+    - rabbitmq
+- name: MDS
+  path: MarketDataServer\
+  random-route: true
+  memory: 1G
+  health-check-type: port
+  buildpack: dotnet_core_buildpack
+  services:
+    - eureka
+    - rabbitmq
+----
+. Change current folder to \Artifacts and push the app. 
++
+----
+> cf push
+----
+====

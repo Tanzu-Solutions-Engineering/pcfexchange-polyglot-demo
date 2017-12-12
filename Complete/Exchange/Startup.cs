@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Pivotal.Discovery.Client;
@@ -13,6 +14,8 @@ using Steeltoe.CircuitBreaker.Hystrix;
 using Steeltoe.CloudFoundry.Connector.MySql.EFCore;
 using Steeltoe.CloudFoundry.Connector.Rabbit;
 using Steeltoe.Management.CloudFoundry;
+using Steeltoe.Extensions.Logging.CloudFoundry;
+
 
 namespace Exchange
 {
@@ -38,6 +41,7 @@ namespace Exchange
             services.AddRabbitConnection(Configuration, ServiceLifetime.Singleton);
             services.AddDiscoveryClient(Configuration);
             services.AddCloudFoundryActuators(Configuration);
+            services.AddHystrixMetricsStream(Configuration);
             JsonConvert.DefaultSettings = () => ConfigureSerializer(new JsonSerializerSettings());
         }
 
@@ -53,9 +57,11 @@ namespace Exchange
             app.UseCors(builder => {
                 builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
             });
+            app.UseHystrixRequestContext();
             app.UseMvc();
             app.UseDiscoveryClient();
             app.UseCloudFoundryActuators();
+            app.UseHystrixMetricsStream();
             app.UseOrderbookService();
 
         }

@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Steeltoe.Extensions.Configuration;
+using Steeltoe.Extensions.Configuration.CloudFoundry;
+using Steeltoe.Extensions.Logging;
+using Steeltoe.Extensions.Logging.CloudFoundry;
 namespace Exchange
 {
     public class Program
@@ -20,6 +23,11 @@ namespace Exchange
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration(config => config.AddCloudFoundry())
+                .ConfigureLogging((context, builder) =>
+                {
+                    builder.AddConfiguration(context.Configuration.GetSection("Logging"));
+                    builder.AddDynamicConsole();
+                })
                 .UseStartup<Startup>()
                 .Build();
     }

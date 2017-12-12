@@ -27,40 +27,6 @@ namespace Exchange.Models
     
     public class OrderbookService
     {
-//        public abstract class OrderbookCommand : HystrixCommand<List<ExecutionReport>>
-//        {
-//            protected readonly OrderbookService _service;
-//
-//            protected OrderbookCommand(IHystrixCommandOptions options, OrderbookService service) : base(options)
-//            {
-//                _service = service;
-//            }
-//
-//
-//        }
-//        public class NewOrderCommand : OrderbookCommand
-//        {
-//            private readonly Order _order;
-//
-//            public NewOrderCommand(IHystrixCommandOptions options, OrderbookService service, Order order) : base(options, service)
-//            {
-//                _order = order;
-//            }
-//
-//            protected override List<ExecutionReport> Run()
-//            {
-//                
-//                var reports = _service.OrderBook.WithReports(x => x.NewOrder(_order.ToOrder()));
-//                _isOrderbookUncommited = true;
-//                ProcessExecutionReports(reports);
-//                return reports;
-//            }
-//
-//            protected override Task<List<ExecutionReport>> RunFallbackAsync()
-//            {
-//                return base.RunFallbackAsync();
-//            }
-//        }
         private readonly ConnectionFactory _rabbitConnection;
         private readonly ExchangeContext _db;
         public OrderBook OrderBook { get; private set; }
@@ -121,7 +87,8 @@ namespace Exchange.Models
         
         public List<ExecutionReport> NewOrder(ExecutionReport order)
         {
-            var cmd = new HystrixCommand<List<ExecutionReport>>(HystrixCommandGroupKeyDefault.AsKey("NewOrder"),
+            var options = new HystrixCommandOptions(HystrixCommandGroupKeyDefault.AsKey("Exchange"), HystrixCommandKeyDefault.AsKey("Exchange.NewOrder"));
+            var cmd = new HystrixCommand<List<ExecutionReport>>(options,
                 run: () => NewOrderRun(order),
                 fallback: () => NewOrderFallback(order));
             return cmd.Execute();
@@ -144,7 +111,8 @@ namespace Exchange.Models
 
         public List<ExecutionReport> CancelOrder(string id)
         {
-            var cmd = new HystrixCommand<List<ExecutionReport>>(HystrixCommandGroupKeyDefault.AsKey("CancelOrder"),
+            var options = new HystrixCommandOptions(HystrixCommandGroupKeyDefault.AsKey("Exchange"), HystrixCommandKeyDefault.AsKey("Exchange.CancelOrder"));
+            var cmd = new HystrixCommand<List<ExecutionReport>>(options,
                 run: () => CancelOrderRun(id),
                 fallback: () => CancelOrderFallback(id));
             return cmd.Execute();
