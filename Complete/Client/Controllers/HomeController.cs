@@ -13,7 +13,8 @@ namespace Client.Controllers
         public IActionResult Index([FromServices]IDiscoveryClient discoveryClient)
         {
             var omsUrl = discoveryClient.GetInstances("ORDERMANAGER")?.FirstOrDefault()?.Uri?.ToString() ?? "http://localhost:8080";
-            omsUrl = omsUrl.Replace("https://", "http://"); // need to force http due to self signed cert
+            if (!HttpContext.Request.IsHttps)
+                omsUrl = omsUrl.Replace("https://", "http://"); // ensure we're going over http all the way (self signed cert)
             ViewBag.OMS =  omsUrl ;
             ViewBag.MDS = discoveryClient.GetInstances("MDS")?.FirstOrDefault()?.Uri?.ToString() ?? "http://localhost:53809";
             return View();
