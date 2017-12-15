@@ -1,4 +1,4 @@
-﻿namespace MarketDataServer
+﻿namespace MarketDataServer.Models
 {
     public class Tick
     {

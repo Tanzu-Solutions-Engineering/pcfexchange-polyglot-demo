@@ -1,17 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Almirex.Contracts.Fields;
 using Almirex.Contracts.Messages;
-using Almirex.OrderMatchingEngine;
-using Almirex.OrderMatchingEngine.Utils;
-using Exchange.Models;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Exchange.Repository;
-using RabbitMQ.Client;
+using Exchange.Services;
 
 namespace Exchange.Controllers
 {
@@ -19,10 +11,8 @@ namespace Exchange.Controllers
     public class OrderController : Controller
     {
         private readonly OrderbookService _orderbookService;
-
-
         // GET api/values
-        public OrderController(OrderbookService orderbookService, ConnectionFactory rabbitConnection, ExchangeContext repository)
+        public OrderController(OrderbookService orderbookService)
         {
             _orderbookService = orderbookService;
         }
@@ -30,7 +20,11 @@ namespace Exchange.Controllers
         [HttpGet]
         public IEnumerable<ExecutionReport> Get()
         {
-            return _orderbookService.OrderBook.Asks.Union(_orderbookService.OrderBook.Bids).Select(x => x.ToExecutionReport(ExecType.OrderStatus)).ToList();
+            return _orderbookService.OrderBook
+                .Asks
+                .Union(_orderbookService.OrderBook.Bids)
+                .Select(x => x.ToExecutionReport(ExecType.OrderStatus))
+                .ToList();
         }
 
         // GET api/values/5
@@ -59,7 +53,5 @@ namespace Exchange.Controllers
             var executionReport = _orderbookService.CancelOrder(id).FirstOrDefault();
             return Json(executionReport);
         }
-
-
     }
 }
