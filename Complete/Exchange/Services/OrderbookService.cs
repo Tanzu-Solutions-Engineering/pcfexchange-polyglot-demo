@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Almirex.Contracts.Fields;
 using Almirex.Contracts.Messages;
 using Almirex.OrderMatchingEngine;
@@ -11,17 +9,14 @@ using Almirex.OrderMatchingEngine.Utils;
 using Exchange.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MoreLinq;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using Steeltoe.CircuitBreaker.Hystrix;
-using Steeltoe.CircuitBreaker.Hystrix.Strategy.ExecutionHook;
-using Steeltoe.CircuitBreaker.Hystrix.Strategy.Options;
 using Steeltoe.Discovery.Client;
 
-namespace Exchange.Models
+namespace Exchange.Services
 {
 
     
@@ -33,7 +28,6 @@ namespace Exchange.Models
         public long SeqNum { get; set; }
 
         private IServiceProvider _serviceProvider;
-//        private IServiceScope _scope;
 
         public OrderbookService(IServiceProvider serviceProvider, ConnectionFactory rabbitConnection, ExchangeContext db)
         {

@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Almirex.Contracts.Messages;
+using MarketDataServer.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MarketDataServer

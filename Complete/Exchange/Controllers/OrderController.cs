@@ -4,6 +4,7 @@ using Almirex.Contracts.Fields;
 using Almirex.Contracts.Messages;
 using Microsoft.AspNetCore.Mvc;
 using Exchange.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Exchange.Controllers
 {
@@ -11,6 +12,8 @@ namespace Exchange.Controllers
     public class OrderController : Controller
     {
         private readonly OrderbookService _orderbookService;
+
+
         // GET api/values
         public OrderController(OrderbookService orderbookService)
         {
