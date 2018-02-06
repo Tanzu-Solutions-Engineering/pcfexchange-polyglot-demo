@@ -2,8 +2,20 @@ spring:
   application:
     name: OrderManager
   jpa:
-    generate-ddl: true
+    #generate-ddl: true
+    #hibernate:
+    #  ddl-auto: update
     show-sql: true
+    generate-ddl: false
+  datasource:
+    url: jdbc:mysql://localhost:3306/oms?useSSL=false
+    username: root
+    password:
+endpoints:
+  flyway:
+    sensitive: false
+flyway:
+  locations: sql
 management:
   cloudfoundry:
     skip-ssl-validation: true

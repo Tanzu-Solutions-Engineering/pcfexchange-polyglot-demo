@@ -61,7 +61,7 @@ public class ExecutionReport implements Persistable<String> {
 	private String ordRejReason;
 	private String cxlRejReason;
 	private boolean escrowRestricted;
-		
+
 	public ExecutionReport() {
 		super();
 		// TODO Auto-generated constructor stub
