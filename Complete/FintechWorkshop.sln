@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MarketDataServer", "MarketDataServer\MarketDataServer.csproj", "{3070DCA3-9C04-46EA-B1B5-EB5E7A7FC41F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderManager", "OrderManager\OrderManager.csproj", "{EDD31CD8-5ECA-464A-9EC7-B62BFA166432}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderManager", "OrderManager\OrderManager.csproj", "{EDD31CD8-5ECA-464A-9EC7-B62BFA166432}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExchangeLegacy", "ExchangeLegacy\ExchangeLegacy.csproj", "{028F5B29-EEAE-468E-9D4C-1BAB4685D99D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{EDD31CD8-5ECA-464A-9EC7-B62BFA166432}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDD31CD8-5ECA-464A-9EC7-B62BFA166432}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EDD31CD8-5ECA-464A-9EC7-B62BFA166432}.Release|Any CPU.Build.0 = Release|Any CPU
+		{028F5B29-EEAE-468E-9D4C-1BAB4685D99D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{028F5B29-EEAE-468E-9D4C-1BAB4685D99D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{028F5B29-EEAE-468E-9D4C-1BAB4685D99D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{028F5B29-EEAE-468E-9D4C-1BAB4685D99D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
