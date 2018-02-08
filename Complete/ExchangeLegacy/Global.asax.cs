@@ -13,6 +13,7 @@ using System.Web.Routing;
 using Almirex.Contracts.Interfaces;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Autofac.Integration.Wcf;
 using Autofac.Integration.Web;
 using Autofac.Integration.WebApi;
 using ExchangeLegacy.Config;
@@ -69,6 +70,7 @@ namespace ExchangeLegacy
 
             var builder = new ContainerBuilder();
             builder.Populate(services);
+            builder.RegisterType<Exchange>();
 
             builder.Register(x => x.Resolve<MySqlConnection>()).As<IDbConnection>();
             builder.Register(ctx => logFactory).As<ILoggerFactory>().SingleInstance();
@@ -79,23 +81,20 @@ namespace ExchangeLegacy
             // Register your Web API controllers.
             builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
 
-            // OPTIONAL: Register the Autofac filter provider.
+            // Register the Autofac filter provider.
             builder.RegisterWebApiFilterProvider(config);
 
-            // OPTIONAL: Register the Autofac model binder provider.
+            // Register the Autofac model binder provider.
             builder.RegisterWebApiModelBinderProvider();
             var container = builder.Build();
             container.StartDiscoveryClient();
             container.StartHystrixMetricsStream();
             GlobalConfiguration.Configuration.DependencyResolver = new AutofacWebApiDependencyResolver(container);
-            // ensure that discovery client component starts up
-//            container.Resolve<IDiscoveryClient>();
-
-            container.Resolve<OrderbookService>().Recover();
+            AutofacHostFactory.Container = container;
             _containerProvider = new ContainerProvider(container);
+            container.Resolve<OrderbookService>().Recover();
+            
             Console.WriteLine(">> Exchange Started<<");
-
-            //            RouteConfig.RegisterRoutes(RouteTable.Routes);
         }
 
         void Application_Error(object sender, EventArgs e)

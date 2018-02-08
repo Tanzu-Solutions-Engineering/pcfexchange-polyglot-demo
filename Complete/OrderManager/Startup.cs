@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -31,6 +32,15 @@ namespace OrderManager
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddScoped<ExchangeService>();
+            services.AddScoped(ctx =>
+            {
+
+                var discoveryClient = ctx.GetService<IDiscoveryClient>();
+                var logFactory = ctx.GetService<ILoggerFactory>();
+                var handler = new DiscoveryHttpClientHandler(discoveryClient, logFactory.CreateLogger<DiscoveryHttpClientHandler>());
+                return new HttpClient(handler);
+            });
+            services.AddScoped<IExchangeClient, ExchangeWcfClient>();
             services.AddOptions();
             services.AddDbContext<OrderManagerContext>(opt => opt.UseMySql(Configuration), ServiceLifetime.Transient);
             services.AddMvc().AddJsonOptions(options => ConfigureSerializer(options.SerializerSettings));

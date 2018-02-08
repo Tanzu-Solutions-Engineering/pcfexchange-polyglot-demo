@@ -29,55 +29,64 @@ namespace OrderManager.Services
         private readonly OrderManagerContext _context;
         private readonly IOptionsSnapshot<OmsConfig> _config;
         private readonly ILogger<ExchangeService> _logger;
-        private DiscoveryHttpClientHandler _handler;
+//        private DiscoveryHttpClientHandler _handler;
         private Func<OrderManagerContext> _contextFactory;
-        public ExchangeService(IDiscoveryClient discoveryClient,
+        private IExchangeClient _exchangeClient;
+
+        public ExchangeService(
+//            IDiscoveryClient discoveryClient,
             IServiceProvider serviceProvider,
-            OrderManagerContext context, 
-            IOptionsSnapshot<OmsConfig> config, 
-            ILogger<ExchangeService> logger, 
-            ILoggerFactory logFactory)
+            IExchangeClient exchangeClient,
+            OrderManagerContext context,
+            IOptionsSnapshot<OmsConfig> config,
+            ILogger<ExchangeService> logger)
         {
-            _discoveryClient = discoveryClient;
+//            _discoveryClient = discoveryClient;
             _scope = serviceProvider.CreateScope();
-            _contextFactory = () => (OrderManagerContext)_scope.ServiceProvider.GetService(typeof(OrderManagerContext));
+            _contextFactory = () => (OrderManagerContext) _scope.ServiceProvider.GetService(typeof(OrderManagerContext));
+            _exchangeClient = exchangeClient;
             _context = context;
-            _handler = new DiscoveryHttpClientHandler(_discoveryClient, logFactory.CreateLogger<DiscoveryHttpClientHandler>());
+//            _handler = new DiscoveryHttpClientHandler(_discoveryClient, logFactory.CreateLogger<DiscoveryHttpClientHandler>());
 
             _config = config;
             _logger = logger;
         }
+
         public ExecutionReport PlaceOrder(ExecutionReport order)
         {
             var options = new HystrixCommandOptions(HystrixCommandGroupKeyDefault.AsKey("OMS"), HystrixCommandKeyDefault.AsKey("OMS.NewOrder"));
-            
+
             var cmd = new HystrixCommand<ExecutionReport>(options,
                 run: () => PlaceOrderRun(order),
                 fallback: () => PlaceOrderFallback(order));
 //            Thread.Sleep(1000);
-            var result =  cmd.Execute();
+            var result = cmd.Execute();
             return result;
         }
+
         public ExecutionReport PlaceOrderFallback(ExecutionReport clientOrderRequest)
         {
             clientOrderRequest.ExecType = ExecType.Rejected;
             return clientOrderRequest;
         }
+
         public ExecutionReport PlaceOrderRun(ExecutionReport clientOrderRequest)
         {
-            
+
+            if (clientOrderRequest.LastLiquidityInd == 0)
+                clientOrderRequest.LastLiquidityInd = LastLiquidityInd.AddedLiquidity;
+            if (clientOrderRequest.TimeInForce == 0)
+                clientOrderRequest.TimeInForce = TimeInForce.GoodTillCancel;
+            clientOrderRequest.OrdStatus = OrdStatus.PendingNew;
+            clientOrderRequest.ExecType = ExecType.PendingNew;
+            if (clientOrderRequest.OrdType == 0)
+                clientOrderRequest.OrdType = OrdType.Limit;
+                
 //            var db = _context.Database;
             var orderId = Guid.NewGuid().ToString();
             clientOrderRequest.OrderId = orderId;
             _logger.LogDebug("Created new order with ID=" + orderId);
-            var url = ($"{LookupUrlForExchange(clientOrderRequest.Symbol)}api/order/{orderId}");
-            _logger.LogDebug("Exchange service URL=" + url);
-            HttpClient client = new HttpClient(_handler);
-            var jsonRequest = JsonConvert.SerializeObject(clientOrderRequest);
-            var response = client.PutAsync(url, new StringContent(jsonRequest, Encoding.UTF8, "application/json")).Result;
-            response.EnsureSuccessStatusCode();
-            var responseContent = response.Content.AsString();
-            var eor = JsonConvert.DeserializeObject<ExecutionReport[]>(responseContent);
+            var eor = _exchangeClient.NewOrder(clientOrderRequest);
 
             var ordersToSave = new Dictionary<String, ExecutionReport>();
 //                        var context = (OrderManagerContext)_serviceProvider.GetService(typeof(OrderManagerContext));
@@ -93,8 +102,7 @@ namespace OrderManager.Services
             var existingRecords = context.ExecutionReports.Where(x => orderIds.Contains(x.OrderId)).ToDictionary(x => x.OrderId);
             foreach (var er in ordersToSave.Select(x => x.Value))
             {
-                ExecutionReport existingOrder;
-                if (existingRecords.TryGetValue(er.OrderId, out existingOrder))
+                if (existingRecords.TryGetValue(er.OrderId, out var existingOrder))
                 {
                     context.Entry(existingOrder).CurrentValues.SetValues(er);
                 }
@@ -102,7 +110,8 @@ namespace OrderManager.Services
                 {
                     context.Add(er);
                 }
-            };
+            }
+            ;
             context.SaveChanges();
 
             return newOrderLastState;
@@ -110,15 +119,9 @@ namespace OrderManager.Services
 
         public ExecutionReport DeleteOrder(String clientId, String orderId)
         {
-            HttpClient client = new HttpClient(_handler);
             var context = _contextFactory();
-//            var context = _context;
             ExecutionReport order = context.ExecutionReports.Find(orderId);
-            String url = $"{LookupUrlForExchange(order.Symbol)}api/order/{orderId}";
-            var response = client.DeleteAsync(url).Result;
-            response.EnsureSuccessStatusCode();
-            var responseContent = response.Content.AsString();
-            var eor = JsonConvert.DeserializeObject<ExecutionReport>(responseContent);
+            var eor = _exchangeClient.CancelOrder(order.Symbol, orderId);
             if (eor.ExecType != ExecType.CancelRejected)
             {
                 context.Entry(order).CurrentValues.SetValues(eor);
@@ -126,12 +129,6 @@ namespace OrderManager.Services
             }
             return eor;
         }
-    private String LookupUrlForExchange(String symbol)
-        {
-            var serviceInstances = _discoveryClient.GetInstances("Exchange_" + symbol);
-            String url = serviceInstances[0].Uri.ToString();
-            return url;
-        }
+
     }
-    
 }
