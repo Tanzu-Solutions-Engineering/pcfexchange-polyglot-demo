@@ -58,7 +58,7 @@ namespace ExchangeLegacy.Services
             var transaction = _db.BeginTransaction();
             try
             {
-                var insertSQL = @"insert into executionreport 
+                var insertSQL = @"insert into ExecutionReport 
             (ExecId, 
              AvgPx, 
              ClOrdID, 
@@ -187,9 +187,17 @@ VALUES      (@ExecId,
 
         private List<ExecutionReport> NewOrderRun(ExecutionReport order)
         {
-            var reports = OrderBook.WithReports(x => x.NewOrder(order.ToOrder()));
-            ProcessExecutionReports(reports);
-            return reports;
+            try
+            {
+                var reports = OrderBook.WithReports(x => x.NewOrder(order.ToOrder()));
+                ProcessExecutionReports(reports);
+                return reports;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         private List<ExecutionReport> NewOrderFallback(ExecutionReport order)
@@ -236,13 +244,16 @@ VALUES      (@ExecId,
 //                var db = scope.ServiceProvider.GetRequiredService<ExchangeContext>();
 //                db.Database.Migrate(); // ensure database is created
                 this.SeqNum = 1;
-                var numExecutionReports = _db.QuerySingle<int>("select count(*) from executionreport");
+                Console.WriteLine("getting count");
+                var numExecutionReports = _db.QuerySingle<int>("select count(*) from ExecutionReport where Symbol=@Symbol", new {OrderBook.Symbol});
                 if (numExecutionReports > 0)
                 {
-                    var currentReportsQuery = $@"select * from executionreport e 
-                        inner join (select orderid, max(seqnum) as seqnum from executionreport group by orderid) g 
-                        on e.orderid=g.orderid and e.SeqNum=g.seqnum and OrdStatus in ({(int)OrdStatus.New},{(int)OrdStatus.PartiallyFilled}) and symbol=@Symbol";
+                    var currentReportsQuery = $@"select * from ExecutionReport e 
+                        inner join (select OrderId, max(SeqNum) as SeqNum from ExecutionReport group by OrderId) g 
+                        on e.OrderId=g.OrderId and e.SeqNum=g.SeqNum and OrdStatus in ({(int)OrdStatus.New},{(int)OrdStatus.PartiallyFilled}) and Symbol=@Symbol";
+                    Console.WriteLine("getting current records");
                     var activeOrders = _db.Query<ExecutionReport>(currentReportsQuery, new {this.OrderBook.Symbol}).Select(x => x.ToOrder()).ToList();
+                    Console.WriteLine($"Total active orders {activeOrders.Count}");
 //                    var activeOrders = db.ExecutionReports.AsNoTracking()
 //                        .GroupBy(x => x.OrderId)
 //                        .Select(x => x.MaxBy(y => y.SeqNum))
@@ -251,7 +262,8 @@ VALUES      (@ExecId,
 //                        .ToList();
                     try
                     {
-                        this.SeqNum = _db.QuerySingle<int>("select max(SeqNum) from executionreport where symbol=@Symbol", new {this.OrderBook.Symbol}) + 1;
+                        Console.WriteLine($"Getting seqnum for symbol {OrderBook.Symbol}");
+                        this.SeqNum = _db.QuerySingle<int>("select max(SeqNum) from ExecutionReport where Symbol=@Symbol", new {this.OrderBook.Symbol}) + 1;
 //                        this.SeqNum = db.ExecutionReports.AsNoTracking()
 //                                          .Where(x => x.Symbol == OrderBook.Symbol)
 //                                          .Max(x => x.SeqNum) + 1;

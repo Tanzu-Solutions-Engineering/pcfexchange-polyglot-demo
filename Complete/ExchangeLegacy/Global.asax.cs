@@ -21,6 +21,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Pivotal.Discovery.Client;
 using Pivotal.Extensions.Configuration;
 using Pivotal.Extensions.Configuration.ConfigServer;
@@ -47,7 +49,7 @@ namespace ExchangeLegacy
 
 
             ILoggerFactory logFactory = new LoggerFactory();
-            logFactory.AddConsole(minLevel: LogLevel.Debug);
+            logFactory.AddConsole(minLevel: LogLevel.Error);
             string env = "Production";
             ServerConfig.RegisterConfig(configBuilder =>
                 configBuilder
@@ -67,7 +69,7 @@ namespace ExchangeLegacy
 
             var builder = new ContainerBuilder();
             builder.Populate(services);
-            
+
             builder.Register(x => x.Resolve<MySqlConnection>()).As<IDbConnection>();
             builder.Register(ctx => logFactory).As<ILoggerFactory>().SingleInstance();
             builder.RegisterGeneric(typeof(Logger<>)).As(typeof(ILogger<>)).SingleInstance();
@@ -88,11 +90,31 @@ namespace ExchangeLegacy
             GlobalConfiguration.Configuration.DependencyResolver = new AutofacWebApiDependencyResolver(container);
             // ensure that discovery client component starts up
 //            container.Resolve<IDiscoveryClient>();
+
             container.Resolve<OrderbookService>().Recover();
             _containerProvider = new ContainerProvider(container);
             Console.WriteLine(">> Exchange Started<<");
-            
+
             //            RouteConfig.RegisterRoutes(RouteTable.Routes);
+        }
+
+        void Application_Error(object sender, EventArgs e)
+        {
+            // Code that runs when an unhandled error occurs
+
+            // Get the exception object.
+            Exception exc = Server.GetLastError();
+            Console.Error.WriteLine(exc);
+        }
+        private JsonSerializerSettings ConfigureSerializer(JsonSerializerSettings serializer)
+        {
+            serializer.Formatting = Formatting.Indented;
+            //            serializer.NullValueHandling = NullValueHandling.Ignore;
+            //            serializer.DefaultValueHandling = DefaultValueHandling.Ignore;
+            serializer.MissingMemberHandling = MissingMemberHandling.Ignore;
+            serializer.Converters = new List<JsonConverter> { new StringEnumConverter() };
+            return serializer;
+
         }
     }
 }

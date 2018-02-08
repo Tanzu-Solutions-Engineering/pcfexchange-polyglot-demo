@@ -92,9 +92,18 @@ namespace Exchange.Services
 
         private List<ExecutionReport> NewOrderRun(ExecutionReport order)
         {
-            var reports = OrderBook.WithReports(x => x.NewOrder(order.ToOrder()));
-            ProcessExecutionReports(reports);
-            return reports;
+            try
+            {
+                var reports = OrderBook.WithReports(x => x.NewOrder(order.ToOrder()));
+                ProcessExecutionReports(reports);
+                return reports;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+                throw;
+            }
+            
         }
 
         private List<ExecutionReport> NewOrderFallback(ExecutionReport order)
@@ -141,7 +150,7 @@ namespace Exchange.Services
                 var db = scope.ServiceProvider.GetRequiredService<ExchangeContext>();
                 db.Database.Migrate(); // ensure database is created
                 this.SeqNum = 1;
-                if (db.ExecutionReports.Any())
+                if (db.ExecutionReports.Any(x => x.Symbol == OrderBook.Symbol))
                 {
                     var activeOrders = db.ExecutionReports.AsNoTracking()
                         .GroupBy(x => x.OrderId)
