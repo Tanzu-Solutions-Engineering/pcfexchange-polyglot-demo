@@ -20,7 +20,7 @@ namespace Client
             if (scheme.FirstOrDefault() == "http")
                 result = uri.Replace("https://", "http://");
             else
-                result = uri.Replace("https://", "http://");
+                result = uri.Replace("http://", "https://");
             return result;
         }
     }
