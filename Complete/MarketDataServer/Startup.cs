@@ -7,8 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using Steeltoe.CloudFoundry.Connector.Rabbit;
 using Pivotal.Discovery.Client;
+using Steeltoe.CloudFoundry.Connector.RabbitMQ;
 using Steeltoe.Management.CloudFoundry;
 
 namespace MarketDataServer
@@ -26,7 +26,7 @@ namespace MarketDataServer
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().AddJsonOptions(options => ConfigureSerializer(options.SerializerSettings));
-            services.AddRabbitConnection(Configuration);
+            services.AddRabbitMQConnection(Configuration);
             services.AddSignalR(x => ConfigureSerializer(x.JsonSerializerSettings));
             services.AddDiscoveryClient(Configuration);
             services.AddSingleton<DataPusher>();

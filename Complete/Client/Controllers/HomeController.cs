@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Pivotal.Discovery.Client;
+using Steeltoe.Common.Discovery;
 
 namespace Client.Controllers
 {
@@ -18,7 +19,11 @@ namespace Client.Controllers
             
             ViewBag.OMS =  omsUrl.MatchCurrentScheme(HttpContext) ;
             ViewBag.MDS = mdsUrl.MatchCurrentScheme(HttpContext);
-            return View();
+            var features = new Features()
+            {
+                TickerEnabled = true
+            };
+            return View(features);
         }
         
     }

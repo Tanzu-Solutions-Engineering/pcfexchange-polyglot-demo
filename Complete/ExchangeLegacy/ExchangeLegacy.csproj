@@ -53,11 +53,11 @@
     <Reference Include="Almirex.OrderMatchingEngine">
       <HintPath>..\Libs\Almirex.OrderMatchingEngine.dll</HintPath>
     </Reference>
-    <Reference Include="Autofac, Version=4.6.2.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\packages\Autofac.4.6.2\lib\net45\Autofac.dll</HintPath>
+    <Reference Include="Autofac, Version=4.7.1.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
+      <HintPath>..\packages\Autofac.4.7.1\lib\net45\Autofac.dll</HintPath>
     </Reference>
-    <Reference Include="Autofac.Extensions.DependencyInjection, Version=4.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\packages\Autofac.Extensions.DependencyInjection.4.2.0\lib\netstandard1.1\Autofac.Extensions.DependencyInjection.dll</HintPath>
+    <Reference Include="Autofac.Extensions.DependencyInjection, Version=4.2.2.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
+      <HintPath>..\packages\Autofac.Extensions.DependencyInjection.4.2.2\lib\netstandard1.1\Autofac.Extensions.DependencyInjection.dll</HintPath>
     </Reference>
     <Reference Include="Autofac.Integration.Wcf, Version=4.0.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.Wcf.4.0.0\lib\net45\Autofac.Integration.Wcf.dll</HintPath>
@@ -72,10 +72,10 @@
       <HintPath>..\packages\Dapper.1.50.4\lib\net451\Dapper.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="HdrHistogram, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\HdrHistogram.2.0.0\lib\net45\HdrHistogram.dll</HintPath>
@@ -193,17 +193,20 @@
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Pivotal.Discovery.ClientAutofac, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Pivotal.Discovery.ClientAutofac.2.0.0-master-00121\lib\netstandard2.0\Pivotal.Discovery.ClientAutofac.dll</HintPath>
+    <Reference Include="Pivotal.Discovery.ClientAutofac, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Pivotal.Discovery.ClientAutofac.2.0.1\lib\netstandard2.0\Pivotal.Discovery.ClientAutofac.dll</HintPath>
     </Reference>
     <Reference Include="Pivotal.Discovery.Eureka.Client, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Pivotal.Discovery.Eureka.Client.2.0.0-master-00121\lib\netstandard2.0\Pivotal.Discovery.Eureka.Client.dll</HintPath>
     </Reference>
-    <Reference Include="Pivotal.Extensions.Configuration.ConfigServerAutofac, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Pivotal.Extensions.Configuration.ConfigServerAutofac.2.0.0-master-00139\lib\netstandard2.0\Pivotal.Extensions.Configuration.ConfigServerAutofac.dll</HintPath>
+    <Reference Include="Pivotal.Discovery.EurekaBase, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Pivotal.Discovery.EurekaBase.2.0.1\lib\netstandard2.0\Pivotal.Discovery.EurekaBase.dll</HintPath>
     </Reference>
-    <Reference Include="Pivotal.Extensions.Configuration.ConfigServerBase, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Pivotal.Extensions.Configuration.ConfigServerBase.2.0.0-master-00139\lib\netstandard2.0\Pivotal.Extensions.Configuration.ConfigServerBase.dll</HintPath>
+    <Reference Include="Pivotal.Extensions.Configuration.ConfigServerAutofac, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Pivotal.Extensions.Configuration.ConfigServerAutofac.2.0.1\lib\netstandard2.0\Pivotal.Extensions.Configuration.ConfigServerAutofac.dll</HintPath>
+    </Reference>
+    <Reference Include="Pivotal.Extensions.Configuration.ConfigServerBase, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Pivotal.Extensions.Configuration.ConfigServerBase.2.0.1\lib\netstandard2.0\Pivotal.Extensions.Configuration.ConfigServerBase.dll</HintPath>
     </Reference>
     <Reference Include="RabbitMQ.Client, Version=5.0.0.0, Culture=neutral, PublicKeyToken=89e7d7c5feba84ce, processorArchitecture=MSIL">
       <HintPath>..\packages\RabbitMQ.Client.5.0.1\lib\net451\RabbitMQ.Client.dll</HintPath>
@@ -212,13 +215,13 @@
       <HintPath>..\packages\Remotion.Linq.2.1.1\lib\net45\Remotion.Linq.dll</HintPath>
     </Reference>
     <Reference Include="Steeltoe.CircuitBreaker.Hystrix.MetricsStreamAutofac, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.CircuitBreaker.Hystrix.MetricsStreamAutofac.2.0.0-master-00088\lib\netstandard2.0\Steeltoe.CircuitBreaker.Hystrix.MetricsStreamAutofac.dll</HintPath>
+      <HintPath>..\packages\Steeltoe.CircuitBreaker.Hystrix.MetricsStreamAutofac.2.0.0\lib\netstandard2.0\Steeltoe.CircuitBreaker.Hystrix.MetricsStreamAutofac.dll</HintPath>
     </Reference>
     <Reference Include="Steeltoe.CircuitBreaker.HystrixAutofac, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.CircuitBreaker.HystrixAutofac.2.0.0-master-00088\lib\net461\Steeltoe.CircuitBreaker.HystrixAutofac.dll</HintPath>
+      <HintPath>..\packages\Steeltoe.CircuitBreaker.HystrixAutofac.2.0.0\lib\net461\Steeltoe.CircuitBreaker.HystrixAutofac.dll</HintPath>
     </Reference>
     <Reference Include="Steeltoe.CircuitBreaker.HystrixBase, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.CircuitBreaker.HystrixBase.2.0.0-master-00088\lib\netstandard2.0\Steeltoe.CircuitBreaker.HystrixBase.dll</HintPath>
+      <HintPath>..\packages\Steeltoe.CircuitBreaker.HystrixBase.2.0.0\lib\netstandard2.0\Steeltoe.CircuitBreaker.HystrixBase.dll</HintPath>
     </Reference>
     <Reference Include="Steeltoe.CloudFoundry.Connector, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Steeltoe.CloudFoundry.Connector.2.0.0-master-00199\lib\netstandard2.0\Steeltoe.CloudFoundry.Connector.dll</HintPath>
@@ -229,17 +232,20 @@
     <Reference Include="Steeltoe.CloudFoundry.Connector.Rabbit, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Steeltoe.CloudFoundry.Connector.Rabbit.2.0.0-dev-00189\lib\netstandard2.0\Steeltoe.CloudFoundry.Connector.Rabbit.dll</HintPath>
     </Reference>
+    <Reference Include="Steeltoe.CloudFoundry.ConnectorAutofac, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Steeltoe.CloudFoundry.ConnectorAutofac.2.0.0\lib\netstandard2.0\Steeltoe.CloudFoundry.ConnectorAutofac.dll</HintPath>
+    </Reference>
     <Reference Include="Steeltoe.CloudFoundry.ConnectorBase, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.CloudFoundry.ConnectorBase.2.0.0-master-00201\lib\netstandard2.0\Steeltoe.CloudFoundry.ConnectorBase.dll</HintPath>
+      <HintPath>..\packages\Steeltoe.CloudFoundry.ConnectorBase.2.0.0\lib\netstandard2.0\Steeltoe.CloudFoundry.ConnectorBase.dll</HintPath>
     </Reference>
     <Reference Include="Steeltoe.Common, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.Common.2.0.0-rc1\lib\netstandard2.0\Steeltoe.Common.dll</HintPath>
+      <HintPath>..\packages\Steeltoe.Common.2.0.0\lib\netstandard2.0\Steeltoe.Common.dll</HintPath>
     </Reference>
     <Reference Include="Steeltoe.Common.Autofac, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.Common.Autofac.2.0.0-master-00041\lib\netstandard2.0\Steeltoe.Common.Autofac.dll</HintPath>
+      <HintPath>..\packages\Steeltoe.Common.Autofac.2.0.0\lib\netstandard2.0\Steeltoe.Common.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Steeltoe.Common.Http, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.Common.Http.2.0.0-rc1\lib\netstandard2.0\Steeltoe.Common.Http.dll</HintPath>
+      <HintPath>..\packages\Steeltoe.Common.Http.2.0.0\lib\netstandard2.0\Steeltoe.Common.Http.dll</HintPath>
     </Reference>
     <Reference Include="Steeltoe.Discovery.Client, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Steeltoe.Discovery.Client.2.0.0-dev-00129\lib\netstandard2.0\Steeltoe.Discovery.Client.dll</HintPath>
@@ -247,17 +253,20 @@
     <Reference Include="Steeltoe.Discovery.Eureka.Client, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Steeltoe.Discovery.Eureka.Client.2.0.0-rc1\lib\netstandard2.0\Steeltoe.Discovery.Eureka.Client.dll</HintPath>
     </Reference>
+    <Reference Include="Steeltoe.Discovery.EurekaBase, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Steeltoe.Discovery.EurekaBase.2.0.1\lib\netstandard2.0\Steeltoe.Discovery.EurekaBase.dll</HintPath>
+    </Reference>
     <Reference Include="Steeltoe.Extensions.Configuration.CloudFoundry, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Steeltoe.Extensions.Configuration.CloudFoundry.2.0.0-master-00199\lib\netstandard2.0\Steeltoe.Extensions.Configuration.CloudFoundry.dll</HintPath>
     </Reference>
-    <Reference Include="Steeltoe.Extensions.Configuration.CloudFoundryAutofac, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.Extensions.Configuration.CloudFoundryAutofac.2.0.0-master-00205\lib\netstandard2.0\Steeltoe.Extensions.Configuration.CloudFoundryAutofac.dll</HintPath>
+    <Reference Include="Steeltoe.Extensions.Configuration.CloudFoundryAutofac, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Steeltoe.Extensions.Configuration.CloudFoundryAutofac.2.0.1\lib\netstandard2.0\Steeltoe.Extensions.Configuration.CloudFoundryAutofac.dll</HintPath>
     </Reference>
-    <Reference Include="Steeltoe.Extensions.Configuration.CloudFoundryBase, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.Extensions.Configuration.CloudFoundryBase.2.0.0-master-00205\lib\netstandard2.0\Steeltoe.Extensions.Configuration.CloudFoundryBase.dll</HintPath>
+    <Reference Include="Steeltoe.Extensions.Configuration.CloudFoundryBase, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Steeltoe.Extensions.Configuration.CloudFoundryBase.2.0.1\lib\netstandard2.0\Steeltoe.Extensions.Configuration.CloudFoundryBase.dll</HintPath>
     </Reference>
-    <Reference Include="Steeltoe.Extensions.Configuration.ConfigServerBase, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Steeltoe.Extensions.Configuration.ConfigServerBase.2.0.0-master-00205\lib\netstandard2.0\Steeltoe.Extensions.Configuration.ConfigServerBase.dll</HintPath>
+    <Reference Include="Steeltoe.Extensions.Configuration.ConfigServerBase, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Steeltoe.Extensions.Configuration.ConfigServerBase.2.0.1\lib\netstandard2.0\Steeltoe.Extensions.Configuration.ConfigServerBase.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.AppContext">
