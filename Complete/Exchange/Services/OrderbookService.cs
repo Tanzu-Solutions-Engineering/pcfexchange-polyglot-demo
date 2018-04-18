@@ -7,6 +7,7 @@ using Almirex.Contracts.Interfaces;
 using Almirex.Contracts.Messages;
 using Almirex.OrderMatchingEngine;
 using Almirex.OrderMatchingEngine.Utils;
+using Exchange.Config;
 using Exchange.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,7 @@ using MoreLinq;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using Steeltoe.CircuitBreaker.Hystrix;
-using Steeltoe.Discovery.Client;
+//using Steeltoe.Discovery.Client;
 
 namespace Exchange.Services
 {

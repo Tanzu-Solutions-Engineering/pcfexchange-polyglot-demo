@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@model Features
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -280,99 +281,103 @@
             </li>
         </ul>
     </div>
-    <div class="tabs-content">
-        <div class="content active" id="panel1">
-            <table width="50%">
-                <thead>
-                    <tr>
-                        <th>Id</th>
-                        <th>Symbol</th>
-                        <th>Type</th>
-                        <th>Qty</th>
-                        <th>Price</th>
-                        <th>LastPx</th>
-                        <th>LastQty</th>
-                        <th>CumQty</th>
-                        <th>LastCommission</th>
-                        <th>Side</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody data-bind="foreach: openOrders">
-                    <tr>
-                        <td data-bind="text: orderId"></td>
-                        <td data-bind="text: symbol"></td>
-                        <td data-bind="text: ordType"></td>
-                        <td data-bind="text: orderQty"></td>
-                        <td data-bind="text: price"></td>
-                        <td data-bind="text: lastPx"></td>
-                        <td data-bind="text: lastQty"></td>
-                        <td data-bind="text: cumQty"></td>
-                        <td data-bind="text: lastCommission"></td>
-                        <td data-bind="text: side"></td>
-                        <td data-bind="text: ordStatus"></td>
-                        <td><button data-bind="click: $parent.CancelOrder.bind($data, $data.orderId())">Cancel</button></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="content" id="panel2">
-            <table width="50%">
-                <thead>
-                    <tr>
-                        <th>Id</th>
-                        <th>Symbol</th>
-                        <th>Type</th>
-                        <th>Qty</th>
-                        <th>Price</th>
-                        <th>LastPx</th>
-                        <th>LastQty</th>
-                        <th>CumQty</th>
-                        <th>LastCommission</th>
-                        <th>Side</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody data-bind="foreach: completedOrders">
-                    <tr>
-                        <td data-bind="text: orderId"></td>
-                        <td data-bind="text: symbol"></td>
-                        <td data-bind="text: ordType"></td>
-                        <td data-bind="text: orderQty"></td>
-                        <td data-bind="text: price"></td>
-                        <td data-bind="text: lastPx"></td>
-                        <td data-bind="text: lastQty"></td>
-                        <td data-bind="text: cumQty"></td>
-                        <td data-bind="text: lastCommission"></td>
-                        <td data-bind="text: side"></td>
-                        <td data-bind="text: ordStatus"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+<div class="tabs-content">
+    <div class="content active" id="panel1">
+        <table width="50%">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Symbol</th>
+                <th>Type</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>LastPx</th>
+                <th>LastQty</th>
+                <th>CumQty</th>
+                <th>LastCommission</th>
+                <th>Side</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody data-bind="foreach: openOrders">
+            <tr>
+                <td data-bind="text: orderId"></td>
+                <td data-bind="text: symbol"></td>
+                <td data-bind="text: ordType"></td>
+                <td data-bind="text: orderQty"></td>
+                <td data-bind="text: price"></td>
+                <td data-bind="text: lastPx"></td>
+                <td data-bind="text: lastQty"></td>
+                <td data-bind="text: cumQty"></td>
+                <td data-bind="text: lastCommission"></td>
+                <td data-bind="text: side"></td>
+                <td data-bind="text: ordStatus"></td>
+                <td><button data-bind="click: $parent.CancelOrder.bind($data, $data.orderId())">Cancel</button></td>
+            </tr>
+            </tbody>
+        </table>
     </div>
+    <div class="content" id="panel2">
+        <table width="50%">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Symbol</th>
+                <th>Type</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>LastPx</th>
+                <th>LastQty</th>
+                <th>CumQty</th>
+                <th>LastCommission</th>
+                <th>Side</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody data-bind="foreach: completedOrders">
+            <tr>
+                <td data-bind="text: orderId"></td>
+                <td data-bind="text: symbol"></td>
+                <td data-bind="text: ordType"></td>
+                <td data-bind="text: orderQty"></td>
+                <td data-bind="text: price"></td>
+                <td data-bind="text: lastPx"></td>
+                <td data-bind="text: lastQty"></td>
+                <td data-bind="text: cumQty"></td>
+                <td data-bind="text: lastCommission"></td>
+                <td data-bind="text: side"></td>
+                <td data-bind="text: ordStatus"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+    
+@if(Model.TickerEnabled)
+{ 
     <h3>Ticker</h3>
-<table width="50%">
-    <thead>
-    <tr>
-        <th>Symbol</th>
-        <th>Price</th>
-        <th>Change</th>
-        <th>Change (%)</th>
-        <th>Volume</th>
-    </tr>
-    </thead>
-    <tbody data-bind="foreach: ticks">
-    <tr>
-        <td data-bind="text: symbol"></td>
-        <td data-bind="text: price"></td>
-        <td class="change_value_element" data-bind="text: change"></td>
-        <td class="change_percentage_element" data-bind="text: changePercentage"></td>
-        <td data-bind="text: volume"></td>
-    </tr>
-    </tbody>
-</table>
+    <table width="50%">
+        <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Price</th>
+            <th>Change</th>
+            <th>Change (%)</th>
+            <th>Volume</th>
+        </tr>
+        </thead>
+        <tbody data-bind="foreach: ticks">
+        <tr>
+            <td data-bind="text: symbol"></td>
+            <td data-bind="text: price"></td>
+            <td class="change_value_element" data-bind="text: change"></td>
+            <td class="change_percentage_element" data-bind="text: changePercentage"></td>
+            <td data-bind="text: volume"></td>
+        </tr>
+        </tbody>
+    </table>
+}
 <div id="reject">Order was rejected</div>
     <script src="js/vendor/jquery.js">
     </script>

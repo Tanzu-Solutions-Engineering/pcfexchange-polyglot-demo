@@ -12,13 +12,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
     <PackageReference Include="morelinq" Version="2.7.0" />
-    <PackageReference Include="Pivotal.Discovery.Client" Version="2.0.0-dev-00109" />
-    <PackageReference Include="Pivotal.Extensions.Configuration.ConfigServer" Version="2.0.0-dev-00124" />
+    <PackageReference Include="Pivotal.Discovery.ClientCore" Version="2.0.0-master-00121" />
+    <PackageReference Include="Pivotal.Extensions.Configuration.ConfigServerCore" Version="2.0.0-master-00139" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="2.0.0" />
     <PackageReference Include="RabbitMQ.Client" Version="5.0.1" />
-    <PackageReference Include="Steeltoe.CircuitBreaker.Hystrix" Version="2.0.0-dev-00080" />
-    <PackageReference Include="Steeltoe.CircuitBreaker.Hystrix.MetricsStreamCore" Version="2.0.0-dev-00084" />
-    <PackageReference Include="Steeltoe.CloudFoundry.Connector.MySql" Version="2.0.0-dev-00189" />
+    <PackageReference Include="Steeltoe.CircuitBreaker.Hystrix.MetricsStreamCore" Version="2.0.0-master-00088" />
+    <PackageReference Include="Steeltoe.CircuitBreaker.HystrixCore" Version="2.0.0-master-00088" />
+    <PackageReference Include="Steeltoe.CloudFoundry.Connector.EFCore" Version="2.0.0-master-00204" />
+    <PackageReference Include="Steeltoe.CloudFoundry.ConnectorCore" Version="2.0.0-master-00204" />
     <PackageReference Include="Steeltoe.Extensions.Logging.CloudFoundry" Version="2.0.0-dev-00026" />
     <PackageReference Include="Steeltoe.Management.CloudFoundryCore" Version="2.0.0-dev-00054" />
     <PackageReference Include="System.Net.Sockets" Version="4.3.0" />

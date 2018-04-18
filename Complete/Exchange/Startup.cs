@@ -6,6 +6,7 @@ using Exchange.Repository;
 using Exchange.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -39,7 +40,7 @@ namespace Exchange
             services.AddMvc().AddJsonOptions(options => ConfigureSerializer(options.SerializerSettings));
             services.AddCors();
             services.AddSingleton<OrderbookService>();
-            services.Configure<Steeltoe.Discovery.Client.SpringConfig>(Configuration.GetSection("spring"));
+            services.Configure<SpringConfig>(Configuration.GetSection("spring"));
             services.Configure<ExchangeConfig>(Configuration.GetSection("config"));
             services.AddSingleton<IFeeSchedule,FlatFeeScheduler>();
             services.AddRabbitConnection(Configuration, ServiceLifetime.Singleton);
